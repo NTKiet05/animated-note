@@ -1,0 +1,788 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f7f4ea" />
+    <meta
+      name="description"
+      content="Ứng dụng ghi chú cá nhân phong cách vẽ tay, lưu dữ liệu trực tuyến."
+    />
+    <title>Mẩu Ghi Chú</title>
+    <link rel="icon" type="image/png" href="/favicon.png?v=2.6.0" />
+    <link rel="apple-touch-icon" href="/favicon.png?v=2.6.0" />
+    <link rel="stylesheet" href="/styles.css?v=2.6.0" />
+  </head>
+  <body>
+    <div class="paper-noise" aria-hidden="true"></div>
+    <main class="auth-shell" id="authView" aria-labelledby="authTitle">
+      <section class="auth-card">
+        <div class="auth-intro">
+          <span class="brand-mark auth-brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 32 32" fill="none">
+              <path d="M7 5.5h18v21H7z" />
+              <path d="M11 11h10M11 16h8M11 21h6" />
+            </svg>
+          </span>
+          <p class="eyebrow">Góc riêng của bạn</p>
+          <h1 id="authTitle">Đăng nhập để mở những mẩu ghi chú</h1>
+          <p>Chỉ cần một tên tài khoản và mật khẩu. Mỗi người có một góc ghi chú riêng.</p>
+        </div>
+
+        <form class="auth-form" id="authForm">
+          <div class="auth-tabs" role="tablist" aria-label="Chọn đăng nhập hoặc tạo tài khoản">
+            <button class="auth-tab active" id="loginTab" type="button" role="tab" aria-selected="true">Đăng nhập</button>
+            <button class="auth-tab" id="signupTab" type="button" role="tab" aria-selected="false">Tạo tài khoản</button>
+          </div>
+
+          <label class="field">
+            <span>Tên tài khoản</span>
+            <input id="authUsername" name="username" type="text" minlength="3" maxlength="32" autocomplete="username" required placeholder="Ví dụ: minhnguyen" />
+          </label>
+          <label class="field">
+            <span>Mật khẩu</span>
+            <input id="authPassword" name="password" type="password" minlength="8" maxlength="128" autocomplete="current-password" required placeholder="Ít nhất 8 ký tự" />
+          </label>
+          <div class="auth-extra-actions">
+            <button class="text-link-button" id="forgotPasswordLink" type="button">Quên mật khẩu / Dùng mã khôi phục?</button>
+          </div>
+          <p class="auth-message" id="authMessage" role="status" aria-live="polite"></p>
+          <button class="primary-button auth-submit" id="authSubmitButton" type="submit">Đăng nhập</button>
+        </form>
+      </section>
+    </main>
+
+    <div class="app-shell" id="appView" hidden>
+      <header class="topbar">
+        <a class="brand" href="/" aria-label="Mẩu Ghi Chú">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 32 32" fill="none">
+              <path d="M7 5.5h18v21H7z" />
+              <path d="M11 11h10M11 16h8M11 21h6" />
+            </svg>
+          </span>
+          <span>
+            <strong>Mẩu Ghi Chú</strong>
+            <small>góc nhỏ để nhớ mọi điều</small>
+          </span>
+        </a>
+        <div class="account-area">
+          <div class="save-status" id="saveStatus" role="status" hidden></div>
+          <button class="ghost-button settings-button" id="openSettingsButton" type="button" title="Cài đặt góc ghi chú">
+            <svg class="doodle-nav-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+            <span>Cài đặt</span>
+          </button>
+          <span class="account-email" id="accountEmail"></span>
+          <button class="ghost-button logout-button" id="logoutButton" type="button">Đăng xuất</button>
+        </div>
+      </header>
+
+      <section class="toolbar" aria-label="Công cụ ghi chú">
+        <div class="view-switchers" role="group" aria-label="Chế độ hiển thị">
+          <button class="view-mode-button active" id="viewGridBtn" type="button" title="Hiển thị dạng lưới">Lưới</button>
+          <button class="view-mode-button" id="viewCorkboardBtn" type="button" title="Hiển thị dạng bảng ghim nghiêng">Bảng ghim</button>
+          <button class="view-mode-button" id="viewCalendarBtn" type="button" title="Hiển thị dạng lịch tháng">Lịch</button>
+        </div>
+        <label class="search-box">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="10.8" cy="10.8" r="6.2"></circle>
+            <path d="m15.5 15.5 4.2 4.2"></path>
+          </svg>
+          <span class="sr-only">Tìm kiếm ghi chú</span>
+          <input id="searchInput" type="search" placeholder="Tìm trong mẩu ghi chú hoặc #tag..." />
+        </label>
+        <button class="primary-button" id="newNoteButton" type="button">
+          <span class="button-plus" aria-hidden="true">+</span>
+          Ghi điều mới
+        </button>
+      </section>
+
+      <main class="workspace">
+        <aside class="sidebar" aria-label="Bộ lọc và nhóm ghi chú">
+          <section class="counter-card">
+            <span class="counter-label">Bạn đang giữ</span>
+            <div><strong id="totalCount">0</strong><span>mẩu ghi chú</span></div>
+            <span class="scribble-line" aria-hidden="true"></span>
+          </section>
+
+          <nav class="sidebar-nav" aria-label="Mục lục ghi chú">
+            <div class="sidebar-main-filters">
+              <button class="category-button active" id="filterAllBtn" type="button" aria-pressed="true">
+                <span>Tất cả ghi chú</span>
+                <span class="category-count" id="countAllNotes">0</span>
+              </button>
+              <button class="category-button" id="filterPinnedBtn" type="button" aria-pressed="false">
+                <span>Đã ghim</span>
+                <span class="category-count" id="countPinnedNotes">0</span>
+              </button>
+            </div>
+
+            <div class="sidebar-divider" aria-hidden="true"></div>
+
+            <div class="category-nav-heading">
+              <p class="section-label">Nhóm ghi chú</p>
+              <button
+                class="manage-category-button"
+                id="manageCategoriesButton"
+                type="button"
+                aria-label="Tạo và quản lý nhóm ghi chú"
+              >
+                <span aria-hidden="true">+</span> Nhóm
+              </button>
+            </div>
+            <div id="categoryList"></div>
+
+            <div class="sidebar-divider" aria-hidden="true"></div>
+
+            <div class="sidebar-sub-filters">
+              <button class="category-button" id="filterArchivedBtn" type="button" aria-pressed="false">
+                <span>Lưu trữ</span>
+                <span class="category-count" id="countArchivedNotes">0</span>
+              </button>
+              <button class="category-button" id="filterTrashBtn" type="button" aria-pressed="false">
+                <span>Thùng rác</span>
+                <span class="category-count" id="countTrashNotes">0</span>
+              </button>
+            </div>
+          </nav>
+
+          <section class="tags-section" id="tagsSection" aria-label="Lọc theo thẻ nhãn">
+            <p class="section-label">Thẻ nhãn (#tags)</p>
+            <div class="tags-cloud" id="tagsCloud"></div>
+          </section>
+
+          <div class="tiny-reminder" aria-hidden="true">
+            <span>✦</span>
+            <p>Một ý nhỏ hôm nay<br />có thể rất quý ngày mai.</p>
+          </div>
+        </aside>
+
+        <section class="notes-area" aria-labelledby="notesHeading">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow" id="filterCaption">Tất cả</p>
+              <h1 id="notesHeading">Ghi chú của bạn</h1>
+            </div>
+            <div class="section-heading-actions">
+              <span class="visible-count" id="visibleCount">0 ghi chú</span>
+              <button class="danger-button empty-trash-btn" id="emptyTrashButton" type="button" hidden>Dọn sạch thùng rác</button>
+            </div>
+          </div>
+
+          <div class="calendar-view" id="calendarView" hidden>
+            <div class="calendar-header">
+              <button class="ghost-button calendar-prev-btn" id="calendarPrevMonthBtn" type="button">‹ Tháng trước</button>
+              <h2 class="calendar-title" id="calendarTitle">Tháng 9, 2026</h2>
+              <button class="ghost-button calendar-next-btn" id="calendarNextMonthBtn" type="button">Tháng sau ›</button>
+            </div>
+            <div class="calendar-grid" id="calendarGrid"></div>
+          </div>
+
+          <div class="notes-grid" id="notesGrid" aria-live="polite"></div>
+
+          <div class="empty-state" id="emptyState" hidden>
+            <div class="empty-doodle" aria-hidden="true">
+              <span></span><span></span><span></span>
+            </div>
+            <h2>Trang giấy đang chờ bạn</h2>
+            <p id="emptyMessage">Thêm ghi chú đầu tiên để bắt đầu nhé.</p>
+            <button class="secondary-button" id="emptyAddButton" type="button">Viết ghi chú đầu tiên</button>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <dialog class="note-dialog paper-dialog" id="noteDialog" aria-labelledby="dialogTitle">
+      <form class="note-modal-form" id="noteForm">
+        <div class="note-modal-sidebar note-modal-body" id="noteModalSidebar">
+          <section class="note-modal-top">
+            <div class="dialog-header">
+              <div>
+                <p class="eyebrow" id="dialogEyebrow">Mẩu giấy mới</p>
+                <h2 id="dialogTitle">Ghi lại một điều</h2>
+              </div>
+              <div class="dialog-header-actions">
+                <button
+                  class="secondary-button expand-note-button"
+                  id="expandNoteButton"
+                  type="button"
+                  aria-controls="noteReadingPanel"
+                  aria-expanded="false"
+                  aria-label="Phóng to để đọc toàn bộ ghi chú"
+                  hidden
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M8.5 4H4v4.5M15.5 4H20v4.5M20 15.5V20h-4.5M8.5 20H4v-4.5" />
+                  </svg>
+                  <span class="expand-note-button-label" id="expandNoteButtonLabel">Phóng to</span>
+                </button>
+                <button
+                  class="secondary-button drawer-edit-button"
+                  id="editNoteButton"
+                  type="button"
+                  aria-label="Sửa ghi chú"
+                  hidden
+                >Sửa</button>
+                <button class="icon-button" id="closeDialogButton" type="button" aria-label="Đóng cửa sổ">×</button>
+              </div>
+            </div>
+
+            <input id="noteId" type="hidden" />
+            <details class="note-details-panel" id="noteDetailsPanel" open>
+              <summary>
+                <span class="note-details-summary-copy">
+                  <span class="note-details-caption">Thông tin ghi chú</span>
+                  <span class="note-details-compact" aria-label="Thông tin ghi chú đã thu gọn">
+                    <span><b>Tiêu đề:</b> <span id="noteSummaryTitle">Chưa có tiêu đề</span></span>
+                    <span><b>Nhóm:</b> <span id="noteSummaryCategory">Chưa chọn nhóm</span></span>
+                    <span><b>Ngày:</b> <span id="noteSummaryDate">Chưa chọn ngày</span></span>
+                  </span>
+                </span>
+                <span class="note-details-toggle" aria-hidden="true"></span>
+              </summary>
+              <div class="note-fixed-fields">
+                <label class="field note-title-field">
+                  <span>Tiêu đề</span>
+                  <input id="noteTitle" name="title" maxlength="120" placeholder="Ví dụ: Việc cần nhớ hôm nay" autofocus />
+                </label>
+
+                <label class="field">
+                  <span>Nhóm</span>
+                  <select id="noteCategory" name="category_id" required></select>
+                  <small>Chỉ chọn từ những nhóm đã tạo.</small>
+                </label>
+
+                <label class="field note-date-field">
+                  <span>Ngày của ghi chú</span>
+                  <input id="noteDate" name="note_date" type="date" min="1000-01-01" max="9999-12-31" />
+                  <small>Có thể chọn ngày hôm nay hoặc một ngày khác.</small>
+                </label>
+              </div>
+            </details>
+          </section>
+
+          <div class="format-toolbar" id="noteFormatToolbar" role="toolbar" aria-label="Định dạng nội dung ghi chú">
+            <button class="format-button" type="button" data-format-command="bold" aria-label="In đậm" title="In đậm"><strong>B</strong></button>
+            <button class="format-button format-underline" type="button" data-format-command="underline" aria-label="Gạch chân" title="Gạch chân">U</button>
+            <label class="format-select-label">
+              <span class="sr-only">Cỡ chữ</span>
+              <select id="noteFontSize" aria-label="Cỡ chữ">
+                <option value="" disabled>Nhiều cỡ</option>
+                <option value="2">13 px</option>
+                <option value="3" selected>16 px</option>
+                <option value="5">24 px</option>
+                <option value="6">32 px</option>
+              </select>
+            </label>
+            <label class="format-color-label" title="Màu chữ">
+              <span>A</span>
+              <input id="noteTextColor" type="color" value="#25252a" aria-label="Màu chữ" />
+            </label>
+            <button class="format-button apply-text-color-button" id="applyTextColorButton" type="button">Màu chữ</button>
+            <label class="format-color-label highlight-color-label" title="Chọn màu highlight">
+              <span>H</span>
+              <input id="noteHighlightColor" type="color" value="#fff1a9" aria-label="Màu highlight" />
+            </label>
+            <button class="format-button apply-highlight-button" id="applyHighlightButton" type="button">Highlight</button>
+            <button class="format-button" id="addChecklistButton" type="button" title="Thêm việc cần làm">+ [✓] Việc làm</button>
+            <button class="format-button" id="openDoodleButton" type="button" title="Mở khung vẽ nét tay">Nét vẽ tay</button>
+            <button
+              class="format-button comment-tool-button"
+              id="addCommentButton"
+              type="button"
+              title="Thêm chú thích cho đoạn chữ đang chọn"
+              hidden
+            >+ Chú thích</button>
+            <button class="format-button clear-format-button" id="clearNoteFormat" type="button" aria-label="Xóa mọi định dạng khỏi phần được chọn" title="Xóa in đậm, gạch chân, màu chữ, highlight và cỡ chữ">Xóa định dạng</button>
+          </div>
+
+          <div class="note-styling-row">
+            <fieldset class="color-field">
+              <legend>Màu giấy</legend>
+              <div class="color-picker">
+                <label><input type="radio" name="color" value="yellow" checked /><span class="swatch swatch-yellow">Vàng</span></label>
+                <label><input type="radio" name="color" value="blue" /><span class="swatch swatch-blue">Xanh</span></label>
+                <label><input type="radio" name="color" value="pink" /><span class="swatch swatch-pink">Hồng</span></label>
+                <label><input type="radio" name="color" value="green" /><span class="swatch swatch-green">Lục</span></label>
+                <label><input type="radio" name="color" value="purple" /><span class="swatch swatch-purple">Tím</span></label>
+              </div>
+            </fieldset>
+
+            <fieldset class="pattern-field">
+              <legend>Vân ruột giấy</legend>
+              <div class="pattern-picker" id="patternPicker">
+                <label><input type="radio" name="pattern" value="blank" checked /><span class="pattern-badge badge-blank" title="Giấy trơn">Trơn</span></label>
+                <label><input type="radio" name="pattern" value="lined" /><span class="pattern-badge badge-lined" title="Kẻ ngang">Kẻ</span></label>
+                <label><input type="radio" name="pattern" value="grid" /><span class="pattern-badge badge-grid" title="Ô ly">Ô ly</span></label>
+                <label><input type="radio" name="pattern" value="dot" /><span class="pattern-badge badge-dot" title="Chấm bi">Chấm</span></label>
+              </div>
+            </fieldset>
+          </div>
+
+          <fieldset class="stickers-field">
+            <legend>Dán trang trí (Stickers & Băng dính)</legend>
+            <div class="stickers-selector" id="stickersSelector">
+              <button class="sticker-btn" type="button" data-sticker="tape-left" title="Băng dính góc trái">Băng dính trái</button>
+              <button class="sticker-btn" type="button" data-sticker="tape-right" title="Băng dính góc phải">Băng dính phải</button>
+              <button class="sticker-btn" type="button" data-sticker="pin-red" title="Ghim cúc đỏ">Ghim đỏ</button>
+              <button class="sticker-btn" type="button" data-sticker="pin-blue" title="Ghim cúc xanh">Ghim xanh</button>
+              <button class="sticker-btn" type="button" data-sticker="star" title="Ngôi sao">Ngôi sao</button>
+              <button class="sticker-btn" type="button" data-sticker="heart" title="Trái tim">Trái tim</button>
+              <button class="ghost-button clear-stickers-btn" id="clearStickersButton" type="button" title="Gỡ toàn bộ sticker">Gỡ hết</button>
+            </div>
+          </fieldset>
+
+          <div class="note-extras-row">
+            <label class="field tags-input-field">
+              <span>Thẻ nhãn (#tags)</span>
+              <input id="noteTagsInput" placeholder="Ví dụ: muasam, congviec, ytuong (cách nhau dấu phẩy)" />
+            </label>
+          </div>
+
+          <div class="note-options-row">
+            <label class="pin-control">
+              <input id="notePinned" name="is_pinned" type="checkbox" />
+              <span class="check-doodle" aria-hidden="true"></span>
+              <span>Ghim ghi chú này lên đầu</span>
+            </label>
+
+            <label class="pin-control lock-control">
+              <input id="noteLockedCheckbox" type="checkbox" />
+              <span class="check-doodle" aria-hidden="true"></span>
+              <span>Khóa bằng mã PIN</span>
+            </label>
+          </div>
+
+          <div class="pin-input-group" id="notePinWrapper" hidden>
+            <label class="field">
+              <span>Mã PIN bảo mật (4-6 số)</span>
+              <input id="notePinInput" type="password" maxlength="6" inputmode="numeric" placeholder="Ví dụ: 1234" />
+            </label>
+          </div>
+
+          <div class="dialog-actions note-modal-actions">
+            <button class="secondary-button" id="exportPngButton" type="button" title="Xuất ảnh mẩu giấy chất lượng cao">Xuất ảnh PNG</button>
+            <button class="secondary-button" id="shareNoteButton" type="button" title="Chia sẻ qua liên kết bí mật">Chia sẻ</button>
+            <button class="secondary-button" id="archiveNoteButton" type="button">Lưu trữ</button>
+            <button class="secondary-button" id="restoreNoteButton" type="button" hidden>Khôi phục</button>
+            <button class="danger-button" id="deleteNoteButton" type="button" hidden>Xóa ghi chú</button>
+            <span class="action-spacer"></span>
+            <button class="ghost-button" id="cancelButton" type="button">Bỏ qua</button>
+            <button class="primary-button" id="saveNoteButton" type="submit">Lưu ghi chú</button>
+          </div>
+        </div>
+
+        <section class="note-modal-main" id="noteModalMain">
+          <div class="field note-content-field">
+            <label id="noteContentLabel" for="noteContent" class="sr-only">Nội dung</label>
+            <div
+              class="rich-note-editor"
+              id="noteContent"
+              contenteditable="true"
+              role="textbox"
+              aria-multiline="true"
+              aria-labelledby="noteContentLabel"
+              aria-label="Nội dung ghi chú"
+              data-placeholder="Viết điều bạn muốn ghi nhớ..."
+            ></div>
+            <div
+              class="note-content-view"
+              id="noteContentView"
+              role="document"
+              aria-labelledby="noteContentLabel"
+              hidden
+            ></div>
+
+            <div class="doodle-preview-card" id="doodlePreviewBox" hidden>
+              <span class="doodle-card-label">Nét vẽ tay:</span>
+              <img id="doodlePreviewImg" alt="Bản phác thảo vẽ tay" />
+              <button class="ghost-button" id="removeDoodleButton" type="button" title="Xóa bản vẽ này">Xóa nét vẽ</button>
+            </div>
+
+            <div class="checklist-builder" id="checklistBuilder">
+              <div class="checklist-builder-heading">
+                <strong>Danh sách việc cần làm</strong>
+                <button class="ghost-button add-checklist-item-btn" id="addChecklistItemBtn" type="button">+ Thêm mục</button>
+              </div>
+              <div class="checklist-items-list" id="checklistItemsList"></div>
+            </div>
+          </div>
+        </section>
+      </form>
+
+      <aside
+        class="note-reading-panel"
+        id="noteReadingPanel"
+        aria-labelledby="readingPanelTitle"
+        hidden
+      >
+        <header class="reading-panel-header">
+          <div>
+            <p class="eyebrow">Chế độ đọc rộng</p>
+            <h3 id="readingPanelTitle">Tiêu đề ghi chú</h3>
+          </div>
+          <div class="reading-panel-actions">
+            <button class="secondary-button" id="editFromReadingPanelButton" type="button">Sửa tại đây</button>
+            <button
+              class="icon-button reading-panel-close"
+              id="closeReadingPanelButton"
+              type="button"
+              aria-label="Thu nhỏ vùng đọc"
+            >×</button>
+          </div>
+        </header>
+        <div class="reading-panel-meta">
+          <span id="readingPanelCategory">Nhóm ghi chú</span>
+          <span id="readingPanelDate" hidden></span>
+        </div>
+        <div
+          class="reading-panel-scroll"
+          id="readingPanelScroll"
+          tabindex="0"
+          aria-label="Nội dung ghi chú đầy đủ"
+        >
+          <div class="reading-panel-content" id="readingPanelContent" role="document"></div>
+        </div>
+      </aside>
+
+      <section class="comment-composer" id="commentComposer" aria-labelledby="commentComposerTitle" hidden>
+        <div class="comment-panel-heading">
+          <div>
+            <span class="comment-panel-kicker">Chú thích mới</span>
+            <strong id="commentComposerTitle">Thêm thông tin cho đoạn đã chọn</strong>
+          </div>
+          <button class="comment-panel-close" id="cancelCommentButton" type="button" aria-label="Hủy thêm chú thích">×</button>
+        </div>
+        <textarea
+          id="commentText"
+          maxlength="1000"
+          rows="4"
+          placeholder="Nhập nội dung chú thích..."
+          aria-label="Nội dung chú thích"
+        ></textarea>
+        <div class="comment-panel-actions">
+          <button class="ghost-button" id="dismissCommentButton" type="button">Hủy</button>
+          <button class="primary-button" id="saveCommentButton" type="button">Thêm chú thích</button>
+        </div>
+      </section>
+
+      <aside class="comment-popover" id="commentPopover" aria-label="Nội dung chú thích" hidden>
+        <div class="comment-panel-heading">
+          <strong>Chú thích</strong>
+          <button class="comment-panel-close" id="closeCommentPopoverButton" type="button" aria-label="Đóng chú thích">×</button>
+        </div>
+        <p id="commentPopoverText"></p>
+        <button class="danger-button comment-delete-button" id="deleteCommentButton" type="button" hidden>Xóa chú thích</button>
+      </aside>
+    </dialog>
+
+    <dialog class="category-dialog paper-dialog" id="categoryDialog" aria-labelledby="categoryDialogTitle">
+      <form id="categoryForm">
+        <div class="dialog-header">
+          <div>
+            <p class="eyebrow">Sắp xếp góc ghi chú</p>
+            <h2 id="categoryDialogTitle">Quản lý nhóm</h2>
+          </div>
+          <button class="icon-button" id="closeCategoryDialogButton" type="button" aria-label="Đóng cửa sổ">×</button>
+        </div>
+
+        <p class="dialog-lead">Tạo nhóm trước, sau đó chọn nhóm đó khi viết hoặc sửa ghi chú.</p>
+
+        <label class="field category-create-field">
+          <span>Tên nhóm mới</span>
+          <span class="category-create-row">
+            <input id="categoryName" name="name" maxlength="40" autocomplete="off" placeholder="Ví dụ: Công việc" />
+            <button class="primary-button" id="addCategoryButton" type="submit">
+              <span class="button-plus" aria-hidden="true">+</span>
+              Thêm nhóm
+            </button>
+          </span>
+        </label>
+
+        <section class="category-manager" aria-labelledby="categoryManagerHeading">
+          <div class="category-manager-heading">
+            <h3 id="categoryManagerHeading">Các nhóm đã tạo</h3>
+            <span id="categoryTotal">0 nhóm</span>
+          </div>
+          <div class="category-manager-list" id="categoryManagerList"></div>
+        </section>
+
+        <div class="dialog-actions category-dialog-actions">
+          <span class="action-spacer"></span>
+          <button class="ghost-button" id="doneCategoryButton" type="button">Xong</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog class="doodle-dialog paper-dialog" id="doodleDialog" aria-labelledby="doodleDialogTitle">
+      <div class="dialog-header">
+        <div>
+          <p class="eyebrow">Phác thảo vẽ tay</p>
+          <h2 id="doodleDialogTitle">Vẽ nét tay lên mẩu giấy</h2>
+        </div>
+        <button class="icon-button" id="closeDoodleDialogBtn" type="button" aria-label="Đóng bảng vẽ">×</button>
+      </div>
+      <div class="doodle-toolbar">
+        <button class="format-button active" id="doodlePenTool" type="button">Bút phác thảo</button>
+        <button class="format-button" id="doodleEraserTool" type="button">Gôm tẩy</button>
+        <input class="doodle-color-picker" id="doodleColorPicker" type="color" value="#25252a" title="Màu nét vẽ" />
+        <select id="doodleLineWidth" aria-label="Cỡ nét vẽ">
+          <option value="2">Nét mảnh (2px)</option>
+          <option value="4" selected>Nét vừa (4px)</option>
+          <option value="8">Nét đậm (8px)</option>
+        </select>
+        <button class="ghost-button" id="doodleUndoBtn" type="button">Hoàn tác</button>
+        <button class="ghost-button" id="doodleClearBtn" type="button">Xóa hết</button>
+      </div>
+      <div class="doodle-canvas-wrapper">
+        <canvas id="doodleCanvas" width="600" height="350"></canvas>
+      </div>
+      <div class="dialog-actions">
+        <span class="action-spacer"></span>
+        <button class="ghost-button" id="cancelDoodleBtn" type="button">Hủy</button>
+        <button class="primary-button" id="saveDoodleBtn" type="button">Lưu nét vẽ</button>
+      </div>
+    </dialog>
+
+    <dialog class="settings-dialog paper-dialog" id="settingsDialog" aria-labelledby="settingsDialogTitle">
+      <div class="dialog-header">
+        <div>
+          <p class="eyebrow">Quản lý góc nhỏ</p>
+          <h2 id="settingsDialogTitle">Cài đặt góc ghi chú</h2>
+        </div>
+        <button class="icon-button" id="closeSettingsDialogBtn" type="button" aria-label="Đóng cửa sổ">×</button>
+      </div>
+
+      <section class="settings-section">
+        <h3>Giao diện & Âm thanh</h3>
+        <p class="dialog-lead">Tùy chỉnh phong cách hiển thị và hiệu ứng theo sở thích của bạn.</p>
+        <div class="settings-options-list">
+          <div class="setting-option-row">
+            <div class="setting-option-info">
+              <strong>Chế độ màu sắc</strong>
+              <small>Chuyển đổi giữa nền giấy sáng ấm áp và bảng đen phấn trắng ban đêm.</small>
+            </div>
+            <button class="secondary-button setting-action-button" id="themeToggleButton" type="button">
+              <span id="themeIcon" class="doodle-toggle-icon" aria-hidden="true"></span>
+              <span id="themeBtnText">Chế độ Bảng đen</span>
+            </button>
+          </div>
+          <div class="setting-option-row">
+            <div class="setting-option-info">
+              <strong>Âm thanh mẩu giấy (ASMR)</strong>
+              <small>Hiệu ứng sột soạt khi lật giấy, xé ghi chú, cắm ghim và gõ chữ.</small>
+            </div>
+            <button class="secondary-button setting-action-button" id="soundToggleButton" type="button">
+              <span id="soundIcon" class="doodle-toggle-icon" aria-hidden="true"></span>
+              <span id="soundBtnText">Âm thanh giấy: Đang bật</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class="settings-section">
+        <h3>Đổi mật khẩu</h3>
+        <form id="changePasswordForm">
+          <label class="field">
+            <span>Mật khẩu hiện tại</span>
+            <input id="currentPasswordInput" type="password" required />
+          </label>
+          <label class="field">
+            <span>Mật khẩu mới (tối thiểu 8 ký tự)</span>
+            <input id="newPasswordInput" type="password" minlength="8" required />
+          </label>
+          <p class="auth-message" id="changePasswordMessage" role="status" aria-live="polite"></p>
+          <button class="secondary-button" id="submitChangePasswordBtn" type="submit">Cập nhật mật khẩu</button>
+        </form>
+      </section>
+
+      <section class="settings-section">
+        <h3>Sao lưu & Khôi phục</h3>
+        <p class="dialog-lead">Tải toàn bộ ghi chú và danh mục về máy dạng file .json, hoặc nạp lại bản sao lưu.</p>
+        <div class="backup-actions-row">
+          <button class="secondary-button" id="backupDataBtn" type="button">Tải bản sao lưu (.json)</button>
+          <label class="secondary-button file-upload-label">
+            <span>Nạp bản sao lưu (.json)</span>
+            <input id="restoreFileInput" type="file" accept=".json,application/json" hidden />
+          </label>
+        </div>
+      </section>
+
+      <div class="dialog-actions">
+        <span class="action-spacer"></span>
+        <button class="ghost-button" id="doneSettingsBtn" type="button">Đóng</button>
+      </div>
+    </dialog>
+
+    <dialog class="reset-dialog paper-dialog" id="resetPasswordDialog" aria-labelledby="resetPasswordTitle">
+      <form id="resetPasswordForm">
+        <div class="dialog-header">
+          <div>
+            <p class="eyebrow">Khôi phục quyền truy cập</p>
+            <h2 id="resetPasswordTitle">Đặt lại mật khẩu</h2>
+          </div>
+          <button class="icon-button" id="closeResetPasswordBtn" type="button" aria-label="Đóng">×</button>
+        </div>
+        <p class="dialog-lead">Dùng mã khôi phục đã nhận khi tạo tài khoản để đặt lại mật khẩu mới.</p>
+        <label class="field">
+          <span>Tên tài khoản</span>
+          <input id="resetUsernameInput" type="text" required placeholder="Ví dụ: minhnguyen" />
+        </label>
+        <label class="field">
+          <span>Mã khôi phục bí mật</span>
+          <input id="resetRecoveryKeyInput" type="text" required placeholder="Ví dụ: MGC-XXXX-XXXX-XXXX-XXXX" />
+        </label>
+        <label class="field">
+          <span>Mật khẩu mới (ít nhất 8 ký tự)</span>
+          <input id="resetNewPasswordInput" type="password" minlength="8" required placeholder="Mật khẩu mới" />
+        </label>
+        <p class="auth-message" id="resetPasswordMessage" role="status" aria-live="polite"></p>
+        <div class="dialog-actions">
+          <button class="ghost-button" id="cancelResetPasswordBtn" type="button">Hủy</button>
+          <button class="primary-button" id="submitResetPasswordBtn" type="submit">Đặt lại mật khẩu</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog class="share-dialog paper-dialog" id="shareLinkDialog" aria-labelledby="shareLinkTitle">
+      <div class="dialog-header">
+        <div>
+          <p class="eyebrow">Chia sẻ ghi chú</p>
+          <h2 id="shareLinkTitle">Liên kết xem công khai</h2>
+        </div>
+        <button class="icon-button" id="closeShareLinkBtn" type="button" aria-label="Đóng">×</button>
+      </div>
+      <p class="dialog-lead">Bất kỳ ai có đường link bí mật này đều có thể đọc mẩu ghi chú mà không cần tài khoản.</p>
+      <div class="share-link-box">
+        <input id="shareLinkInput" type="text" readonly />
+        <button class="secondary-button" id="copyShareLinkBtn" type="button">Sao chép</button>
+      </div>
+      <div class="dialog-actions">
+        <button class="danger-button" id="unshareNoteBtn" type="button">Ngừng chia sẻ</button>
+        <span class="action-spacer"></span>
+        <button class="ghost-button" id="doneShareLinkBtn" type="button">Xong</button>
+      </div>
+    </dialog>
+
+    <dialog class="public-note-dialog paper-dialog" id="publicNoteDialog" aria-labelledby="publicNoteTitle">
+      <header class="dialog-header">
+        <div>
+          <p class="eyebrow" id="publicNoteCategory">Mẩu Ghi Chú</p>
+          <h2 id="publicNoteTitle">Tiêu đề ghi chú</h2>
+        </div>
+        <button class="icon-button" id="closePublicNoteBtn" type="button" aria-label="Đóng">×</button>
+      </header>
+      <div class="public-note-body" id="publicNoteBody">
+        <div class="public-note-date" id="publicNoteDate"></div>
+        <div class="public-note-content" id="publicNoteContent"></div>
+        <div class="public-note-checklist" id="publicNoteChecklist"></div>
+        <div class="public-note-doodle" id="publicNoteDoodle"></div>
+      </div>
+      <div class="dialog-actions">
+        <span class="action-spacer"></span>
+        <button class="primary-button" id="donePublicNoteBtn" type="button">Đóng</button>
+      </div>
+    </dialog>
+
+    <dialog class="recovery-notice-dialog paper-dialog" id="recoveryNoticeDialog" aria-labelledby="recoveryNoticeTitle">
+      <div class="dialog-header">
+        <div>
+          <p class="eyebrow">Quan trọng</p>
+          <h2 id="recoveryNoticeTitle">Mã khôi phục tài khoản</h2>
+        </div>
+      </div>
+      <p class="dialog-lead">Ứng dụng không dùng email. Hãy lưu lại mã khôi phục bên dưới ở nơi an toàn để lấy lại tài khoản nếu lỡ quên mật khẩu.</p>
+      <div class="recovery-code-box">
+        <code id="recoveryKeyText">MGC-XXXX-XXXX-XXXX-XXXX</code>
+        <button class="secondary-button" id="copyRecoveryKeyBtn" type="button">Sao chép</button>
+      </div>
+      <div class="dialog-actions">
+        <span class="action-spacer"></span>
+        <button class="primary-button" id="closeRecoveryNoticeBtn" type="button">Tôi đã lưu mã này</button>
+      </div>
+    </dialog>
+
+    <dialog class="pin-prompt-dialog paper-dialog" id="pinPromptDialog" aria-labelledby="pinPromptTitle">
+      <form id="pinPromptForm">
+        <div class="dialog-header">
+          <div>
+            <p class="eyebrow">Bảo mật</p>
+            <h2 id="pinPromptTitle">Mẩu ghi chú bị khóa</h2>
+          </div>
+          <button class="icon-button" id="closePinPromptBtn" type="button" aria-label="Đóng">×</button>
+        </div>
+        <p class="dialog-lead">Nhập mã PIN để mở nội dung mẩu ghi chú này.</p>
+        <label class="field">
+          <span>Mã PIN</span>
+          <input id="pinPromptInput" type="password" maxlength="6" inputmode="numeric" required autofocus placeholder="Nhập mã PIN..." />
+        </label>
+        <p class="auth-message" id="pinPromptMessage" role="status" aria-live="polite"></p>
+        <div class="dialog-actions">
+          <button class="ghost-button" id="cancelPinPromptBtn" type="button">Hủy</button>
+          <button class="primary-button" id="submitPinPromptBtn" type="submit">Mở khóa</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog class="export-dialog paper-dialog" id="exportDialog" aria-labelledby="exportDialogTitle">
+      <div class="dialog-header">
+        <div>
+          <p class="eyebrow">Xuất ảnh kỷ niệm</p>
+          <h2 id="exportDialogTitle">Lưu mẩu ghi chú dạng ảnh PNG</h2>
+        </div>
+        <button class="icon-button" id="closeExportDialogBtn" type="button" aria-label="Đóng cửa sổ">×</button>
+      </div>
+
+      <p class="dialog-lead">Chọn phong cách tấm ghi chú bạn yêu thích để tải về làm kỷ niệm hoặc chia sẻ.</p>
+
+      <div class="export-template-selector" id="exportTemplateSelector" role="radiogroup" aria-label="Chọn mẫu lưu">
+        <label class="export-template-option">
+          <input type="radio" name="exportTemplate" value="card" checked />
+          <span class="export-template-card">
+            <span class="export-template-icon-wrap" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="3"></rect><line x1="7" y1="8" x2="17" y2="8"></line><line x1="7" y1="12" x2="14" y2="12"></line><line x1="7" y1="16" x2="11" y2="16"></line></svg>
+            </span>
+            <strong>Tấm ghi chú dán (Mặc định)</strong>
+            <small>Y hệt mẩu giấy dán trong app với màu nền, viền, bóng đổ & sticker</small>
+          </span>
+        </label>
+        <label class="export-template-option">
+          <input type="radio" name="exportTemplate" value="journal" />
+          <span class="export-template-card">
+            <span class="export-template-icon-wrap" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+            </span>
+            <strong>Trang sổ tay đầy đủ</strong>
+            <small>Khổ giấy rộng, kẻ dòng hoặc ô ly tự nhiên như trang nhật ký</small>
+          </span>
+        </label>
+        <label class="export-template-option">
+          <input type="radio" name="exportTemplate" value="polaroid" />
+          <span class="export-template-card">
+            <span class="export-template-icon-wrap" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><rect x="6" y="6" width="12" height="10"></rect><line x1="8" y1="18.5" x2="16" y2="18.5"></line></svg>
+            </span>
+            <strong>Khung ảnh Polaroid</strong>
+            <small>Khung ảnh trắng vintage với chữ viết tay nghệ thuật</small>
+          </span>
+        </label>
+      </div>
+
+      <div class="export-preview-wrapper">
+        <canvas id="exportPreviewCanvas"></canvas>
+      </div>
+
+      <div class="dialog-actions">
+        <button class="ghost-button" id="cancelExportBtn" type="button">Hủy</button>
+        <span class="action-spacer"></span>
+        <button class="primary-button" id="confirmExportBtn" type="button">Tải ảnh PNG</button>
+      </div>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="/app.js?v=2.6.0" defer></script>
+  </body>
+</html>
