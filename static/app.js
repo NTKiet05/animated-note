@@ -1161,6 +1161,907 @@ async function drawNoteExportCanvas(canvas, note, template = "card", isPreview =
       ctx.fillText(dateStr, canvas.width / 2, chinY + 62);
     }
     ctx.textAlign = "start";
+
+  } else if (template === "scrapbook") {
+    // TEMPLATE 4: Sổ Lưu Niệm Scrapbook Vintage
+    const bookW = 740;
+    const paddingX = 48;
+    const contentW = bookW - paddingX * 2;
+
+    ctx.font = "bold 26px 'Mali Local', cursive, sans-serif";
+    const titleLines = wrapCanvasText(ctx, titleStr, contentW - 120);
+    const titleH = Math.max(1, titleLines.length) * 34;
+
+    ctx.font = "17px 'Nunito Local', sans-serif";
+    const bodyLines = contentStr ? wrapCanvasText(ctx, contentStr, contentW) : [];
+    const bodyH = bodyLines.length * 28;
+
+    const checklistH = checklist.length > 0 ? (checklist.length * 30 + 36) : 0;
+    const doodleH = doodleImg ? 200 : 0;
+    const footerH = 60;
+    const metaTopH = 60;
+
+    const innerH = metaTopH + titleH + 20 + (bodyH ? bodyH + 18 : 0) + (checklistH ? checklistH + 18 : 0) + (doodleH ? doodleH + 18 : 0) + footerH + 40;
+    const bookH = Math.max(520, innerH);
+
+    const margin = 26;
+    canvas.width = bookW + margin * 2;
+    canvas.height = bookH + margin * 2;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const bX = margin;
+    const bY = margin;
+
+    // Outer Kraft Paper Frame with drop shadow
+    ctx.fillStyle = "rgba(45, 35, 25, 0.2)";
+    drawCanvasRoundRect(ctx, bX + 6, bY + 8, bookW, bookH, 18);
+    ctx.fill();
+
+    // Kraft paper background
+    ctx.fillStyle = "#f3ebd9";
+    drawCanvasRoundRect(ctx, bX, bY, bookW, bookH, 18);
+    ctx.fill();
+
+    // Stitched border
+    ctx.strokeStyle = "rgba(139, 90, 43, 0.4)";
+    ctx.lineWidth = 1.8;
+    ctx.setLineDash([8, 6]);
+    drawCanvasRoundRect(ctx, bX + 10, bY + 10, bookW - 20, bookH - 20, 14);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Inner paper page
+    const pageX = bX + 24;
+    const pageY = bY + 24;
+    const pageW = bookW - 48;
+    const pageH = bookH - 48;
+
+    ctx.fillStyle = palette.bg;
+    drawCanvasRoundRect(ctx, pageX, pageY, pageW, pageH, 12);
+    ctx.fill();
+
+    // Inner paper pattern
+    ctx.save();
+    drawCanvasRoundRect(ctx, pageX, pageY, pageW, pageH, 12);
+    ctx.clip();
+    if (pattern === "lined") {
+      ctx.strokeStyle = "rgba(37, 37, 42, 0.08)";
+      ctx.lineWidth = 1.2;
+      for (let y = pageY + 80; y < pageY + pageH - 40; y += 28) {
+        ctx.beginPath();
+        ctx.moveTo(pageX + 18, y);
+        ctx.lineTo(pageX + pageW - 18, y);
+        ctx.stroke();
+      }
+    } else if (pattern === "grid") {
+      ctx.strokeStyle = "rgba(37, 37, 42, 0.06)";
+      ctx.lineWidth = 1;
+      for (let x = pageX + 18; x < pageX + pageW; x += 26) {
+        ctx.beginPath();
+        ctx.moveTo(x, pageY + 10);
+        ctx.lineTo(x, pageY + pageH - 10);
+        ctx.stroke();
+      }
+      for (let y = pageY + 18; y < pageY + pageH; y += 26) {
+        ctx.beginPath();
+        ctx.moveTo(pageX + 10, y);
+        ctx.lineTo(pageX + pageW - 10, y);
+        ctx.stroke();
+      }
+    } else if (pattern === "dot") {
+      ctx.fillStyle = "rgba(37, 37, 42, 0.15)";
+      for (let x = pageX + 24; x < pageX + pageW - 16; x += 24) {
+        for (let y = pageY + 24; y < pageY + pageH - 16; y += 24) {
+          ctx.beginPath();
+          ctx.arc(x, y, 1.3, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    }
+    ctx.restore();
+
+    ctx.strokeStyle = "rgba(45, 35, 25, 0.4)";
+    ctx.lineWidth = 2;
+    drawCanvasRoundRect(ctx, pageX, pageY, pageW, pageH, 12);
+    ctx.stroke();
+
+    // 4 Photo corner mounts
+    const corners = [
+      [pageX, pageY, 1, 1],
+      [pageX + pageW, pageY, -1, 1],
+      [pageX, pageY + pageH, 1, -1],
+      [pageX + pageW, pageY + pageH, -1, -1]
+    ];
+    corners.forEach(([cx, cy, dx, dy]) => {
+      ctx.fillStyle = "#8c6239";
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + dx * 22, cy);
+      ctx.lineTo(cx, cy + dy * 22);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = "#5a3d21";
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    });
+
+    // Washi Tape at top-left
+    ctx.save();
+    ctx.translate(pageX + 40, pageY + 2);
+    ctx.rotate(-0.1);
+    ctx.fillStyle = "rgba(225, 210, 160, 0.9)";
+    ctx.fillRect(-25, -7, 60, 18);
+    ctx.strokeStyle = "rgba(70, 50, 30, 0.3)";
+    ctx.setLineDash([3, 3]);
+    ctx.strokeRect(-25, -7, 60, 18);
+    ctx.restore();
+
+    // Vintage Postmark Stamp (top-right)
+    const stampX = pageX + pageW - 65;
+    const stampY = pageY + 45;
+    ctx.save();
+    ctx.translate(stampX, stampY);
+    ctx.rotate(0.12);
+    ctx.strokeStyle = "rgba(168, 60, 60, 0.65)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, 0, 32, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([3, 2]);
+    ctx.beginPath();
+    ctx.arc(0, 0, 26, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.font = "bold 9px 'Nunito Local', sans-serif";
+    ctx.fillStyle = "rgba(168, 60, 60, 0.85)";
+    ctx.textAlign = "center";
+    ctx.fillText("★ MEMORIES ★", 0, -10);
+    ctx.fillText(dateStr || "RECORDED", 0, 4);
+    ctx.fillText("SCRAPBOOK", 0, 16);
+    ctx.restore();
+
+    // Category
+    ctx.textAlign = "left";
+    ctx.font = "bold 13px 'Nunito Local', sans-serif";
+    ctx.fillStyle = "#8c5628";
+    ctx.fillText(`MỤC: ${categoryName}`, pageX + 28, pageY + 36);
+
+    // Title
+    let curY = pageY + 70;
+    ctx.fillStyle = "#25252a";
+    ctx.font = "bold 26px 'Mali Local', cursive, sans-serif";
+    for (const tLine of titleLines) {
+      ctx.fillText(tLine, pageX + 28, curY);
+      curY += 34;
+    }
+    curY += 10;
+
+    // Body text
+    if (bodyLines.length > 0) {
+      ctx.font = "18px 'Nunito Local', sans-serif";
+      ctx.fillStyle = "#2a282f";
+      for (const bLine of bodyLines) {
+        ctx.fillText(bLine, pageX + 28, curY);
+        curY += 28;
+      }
+      curY += 14;
+    }
+
+    // Checklist
+    if (checklist.length > 0) {
+      ctx.font = "bold 18px 'Nunito Local', sans-serif";
+      ctx.fillStyle = "#25252a";
+      ctx.fillText("Việc cần làm:", pageX + 28, curY);
+      curY += 26;
+
+      ctx.font = "17px 'Nunito Local', sans-serif";
+      for (const item of checklist) {
+        ctx.fillText(item.done ? `✔ ${item.text}` : `○ ${item.text}`, pageX + 32, curY);
+        curY += 28;
+      }
+      curY += 10;
+    }
+
+    // Doodle
+    if (doodleImg) {
+      const boxW = pageW - 56;
+      const boxH = 170;
+      const boxX = pageX + 28;
+      const boxY = curY;
+
+      ctx.fillStyle = "#ffffff";
+      drawCanvasRoundRect(ctx, boxX, boxY, boxW, boxH, 10);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(100, 80, 60, 0.4)";
+      ctx.lineWidth = 1.5;
+      drawCanvasRoundRect(ctx, boxX, boxY, boxW, boxH, 10);
+      ctx.stroke();
+
+      const maxDrawW = boxW - 24;
+      const maxDrawH = boxH - 24;
+      const ratio = Math.min(maxDrawW / doodleImg.width, maxDrawH / doodleImg.height, 1);
+      const drawW = doodleImg.width * ratio;
+      const drawH = doodleImg.height * ratio;
+      const drawX = boxX + (boxW - drawW) / 2;
+      const drawY = boxY + (boxH - drawH) / 2;
+      ctx.drawImage(doodleImg, drawX, drawY, drawW, drawH);
+      curY += boxH + 20;
+    }
+
+    // Footer divider & brand
+    curY = pageY + pageH - 36;
+    ctx.setLineDash([4, 4]);
+    ctx.strokeStyle = "rgba(45, 35, 25, 0.3)";
+    ctx.beginPath();
+    ctx.moveTo(pageX + 24, curY);
+    ctx.lineTo(pageX + pageW - 24, curY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    curY += 22;
+    ctx.font = "italic 13px 'Mali Local', cursive, sans-serif";
+    ctx.fillStyle = "#8c6239";
+    ctx.fillText("✦ Scrapbook Kỷ Niệm — Mẩu Ghi Chú ✎", pageX + 28, curY);
+    if (dateStr) {
+      ctx.textAlign = "right";
+      ctx.fillText(dateStr, pageX + pageW - 28, curY);
+      ctx.textAlign = "left";
+    }
+
+  } else if (template === "minimal") {
+    // TEMPLATE 5: Tối Giản Hiện Đại (Clean Minimalist Quote)
+    const cardW = 680;
+    const paddingX = 54;
+    const contentW = cardW - paddingX * 2;
+
+    ctx.font = "bold 28px 'Mali Local', cursive, sans-serif";
+    const titleLines = wrapCanvasText(ctx, titleStr, contentW);
+    const titleH = Math.max(1, titleLines.length) * 38;
+
+    ctx.font = "18px 'Nunito Local', sans-serif";
+    const bodyLines = contentStr ? wrapCanvasText(ctx, contentStr, contentW) : [];
+    const bodyH = bodyLines.length * 30;
+
+    const checklistH = checklist.length > 0 ? (checklist.length * 28 + 36) : 0;
+    const doodleH = doodleImg ? 180 : 0;
+    const footerH = 60;
+    const metaTopH = 60;
+
+    const innerH = metaTopH + titleH + 24 + (bodyH ? bodyH + 20 : 0) + (checklistH ? checklistH + 20 : 0) + (doodleH ? doodleH + 20 : 0) + footerH + 40;
+    const cardH = Math.max(480, innerH);
+
+    const margin = 28;
+    canvas.width = cardW + margin * 2;
+    canvas.height = cardH + margin * 2;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const cardX = margin;
+    const cardY = margin;
+
+    // Soft minimal shadow
+    ctx.fillStyle = "rgba(0, 0, 0, 0.06)";
+    drawCanvasRoundRect(ctx, cardX + 4, cardY + 6, cardW, cardH, 8);
+    ctx.fill();
+
+    // Pure clean background
+    ctx.fillStyle = "#faf9f6";
+    drawCanvasRoundRect(ctx, cardX, cardY, cardW, cardH, 8);
+    ctx.fill();
+
+    // Double delicate thin borders
+    ctx.strokeStyle = "rgba(37, 37, 42, 0.22)";
+    ctx.lineWidth = 1;
+    drawCanvasRoundRect(ctx, cardX + 10, cardY + 10, cardW - 20, cardH - 20, 6);
+    ctx.stroke();
+
+    ctx.strokeStyle = "rgba(37, 37, 42, 0.65)";
+    ctx.lineWidth = 1.4;
+    drawCanvasRoundRect(ctx, cardX + 16, cardY + 16, cardW - 32, cardH - 32, 4);
+    ctx.stroke();
+
+    // Large aesthetic quote mark in corner
+    ctx.font = "bold 64px 'Mali Local', cursive, sans-serif";
+    ctx.fillStyle = "rgba(108, 99, 168, 0.18)";
+    ctx.fillText("“", cardX + paddingX - 18, cardY + 70);
+
+    // Category Pill - clean minimal
+    ctx.font = "bold 12px 'Nunito Local', sans-serif";
+    ctx.fillStyle = "#6c63a8";
+    ctx.fillText(categoryName.toUpperCase(), cardX + paddingX, cardY + 62);
+
+    // Title
+    let curY = cardY + 104;
+    ctx.fillStyle = "#222126";
+    ctx.font = "bold 28px 'Mali Local', cursive, sans-serif";
+    for (const tLine of titleLines) {
+      ctx.fillText(tLine, cardX + paddingX, curY);
+      curY += 38;
+    }
+    curY += 12;
+
+    // Thin separator line
+    ctx.strokeStyle = "rgba(108, 99, 168, 0.35)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(cardX + paddingX, curY);
+    ctx.lineTo(cardX + paddingX + 60, curY);
+    ctx.stroke();
+    curY += 24;
+
+    // Body
+    if (bodyLines.length > 0) {
+      ctx.font = "18px 'Nunito Local', sans-serif";
+      ctx.fillStyle = "#3a3840";
+      for (const bLine of bodyLines) {
+        ctx.fillText(bLine, cardX + paddingX, curY);
+        curY += 30;
+      }
+      curY += 16;
+    }
+
+    // Checklist
+    if (checklist.length > 0) {
+      ctx.font = "bold 16px 'Nunito Local', sans-serif";
+      ctx.fillStyle = "#6c63a8";
+      ctx.fillText("NHIỆM VỤ:", cardX + paddingX, curY);
+      curY += 24;
+
+      ctx.font = "16px 'Nunito Local', sans-serif";
+      ctx.fillStyle = "#3a3840";
+      for (const item of checklist) {
+        ctx.fillText(item.done ? `✓  ${item.text}` : `—  ${item.text}`, cardX + paddingX + 8, curY);
+        curY += 28;
+      }
+      curY += 12;
+    }
+
+    // Doodle
+    if (doodleImg) {
+      const boxW = contentW;
+      const boxH = 150;
+      const boxX = cardX + paddingX;
+      const boxY = curY;
+
+      const maxDrawW = boxW;
+      const maxDrawH = boxH;
+      const ratio = Math.min(maxDrawW / doodleImg.width, maxDrawH / doodleImg.height, 1);
+      const drawW = doodleImg.width * ratio;
+      const drawH = doodleImg.height * ratio;
+      const drawX = boxX + (boxW - drawW) / 2;
+      const drawY = boxY + (boxH - drawH) / 2;
+      ctx.drawImage(doodleImg, drawX, drawY, drawW, drawH);
+      curY += boxH + 16;
+    }
+
+    // Footer: centered subtle brand
+    curY = cardY + cardH - 36;
+    ctx.font = "13px 'Nunito Local', sans-serif";
+    ctx.fillStyle = "#8a8694";
+    if (dateStr) {
+      ctx.fillText(dateStr, cardX + paddingX, curY);
+    }
+    ctx.textAlign = "right";
+    ctx.fillText("MẨU GHI CHÚ • MINIMAL", cardX + cardW - paddingX, curY);
+    ctx.textAlign = "left";
+
+  } else if (template === "postcard") {
+    // TEMPLATE 6: Bưu Thiếp Hoài Niệm (Vintage Postcard)
+    canvas.width = 860;
+    canvas.height = 580;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const margin = 20;
+    const pW = canvas.width - margin * 2;
+    const pH = canvas.height - margin * 2;
+    const pX = margin;
+    const pY = margin;
+
+    // Shadow
+    ctx.fillStyle = "rgba(40, 30, 20, 0.14)";
+    drawCanvasRoundRect(ctx, pX + 5, pY + 7, pW, pH, 12);
+    ctx.fill();
+
+    // Vintage Postcard Paper
+    ctx.fillStyle = "#fbf5ea";
+    drawCanvasRoundRect(ctx, pX, pY, pW, pH, 12);
+    ctx.fill();
+
+    // Outer border
+    ctx.strokeStyle = "rgba(60, 45, 30, 0.4)";
+    ctx.lineWidth = 2;
+    drawCanvasRoundRect(ctx, pX, pY, pW, pH, 12);
+    ctx.stroke();
+
+    // Inner dashed line
+    ctx.strokeStyle = "rgba(60, 45, 30, 0.25)";
+    ctx.lineWidth = 1.2;
+    ctx.setLineDash([6, 5]);
+    drawCanvasRoundRect(ctx, pX + 8, pY + 8, pW - 16, pH - 16, 8);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Header label
+    ctx.font = "bold 15px 'Mali Local', cursive, sans-serif";
+    ctx.fillStyle = "#8c4438";
+    ctx.textAlign = "center";
+    ctx.fillText("★ POST CARD — BƯU THIẾP GHI NHỚ ★", pX + pW / 2, pY + 36);
+
+    // Vertical Divider
+    const midX = pX + pW * 0.54;
+    ctx.strokeStyle = "rgba(60, 45, 30, 0.35)";
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([5, 4]);
+    ctx.beginPath();
+    ctx.moveTo(midX, pY + 54);
+    ctx.lineTo(midX, pY + pH - 36);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // LEFT SIDE: Message & Content
+    ctx.textAlign = "left";
+    const leftW = midX - pX - 44;
+    let curY = pY + 72;
+
+    ctx.font = "bold 22px 'Mali Local', cursive, sans-serif";
+    ctx.fillStyle = "#25252a";
+    const leftTitleLines = wrapCanvasText(ctx, titleStr, leftW);
+    for (const tLine of leftTitleLines) {
+      if (curY > pY + pH - 100) break;
+      ctx.fillText(tLine, pX + 26, curY);
+      curY += 28;
+    }
+    curY += 8;
+
+    ctx.font = "16px 'Nunito Local', sans-serif";
+    ctx.fillStyle = "#35333a";
+    const pBodyLines = wrapCanvasText(ctx, contentStr, leftW);
+    for (const bLine of pBodyLines) {
+      if (curY > pY + pH - (doodleImg ? 140 : 44)) break;
+      ctx.fillText(bLine, pX + 26, curY);
+      curY += 24;
+    }
+
+    if (checklist.length > 0 && curY < pY + pH - 80) {
+      curY += 8;
+      ctx.font = "bold 14px 'Nunito Local', sans-serif";
+      ctx.fillText("Việc làm:", pX + 26, curY);
+      curY += 20;
+      ctx.font = "14px 'Nunito Local', sans-serif";
+      for (const item of checklist) {
+        if (curY > pY + pH - 50) break;
+        ctx.fillText(item.done ? `☑ ${item.text}` : `☐ ${item.text}`, pX + 26, curY);
+        curY += 20;
+      }
+    }
+
+    if (doodleImg && curY < pY + pH - 70) {
+      const dH = Math.min(100, pY + pH - curY - 30);
+      const dW = Math.min(leftW, (doodleImg.width / doodleImg.height) * dH);
+      ctx.drawImage(doodleImg, pX + 26, curY + 6, dW, dH);
+    }
+
+    // RIGHT SIDE: Stamp & Address lines
+    const rightX = midX + 30;
+    const stampW = 86;
+    const stampH = 104;
+    const stampX = pX + pW - stampW - 30;
+    const stampY = pY + 54;
+
+    // Stamp box with serrated/dashed border
+    ctx.fillStyle = "#faf4e6";
+    ctx.fillRect(stampX, stampY, stampW, stampH);
+    ctx.strokeStyle = "#8c4438";
+    ctx.lineWidth = 1.8;
+    ctx.setLineDash([4, 3]);
+    ctx.strokeRect(stampX, stampY, stampW, stampH);
+    ctx.setLineDash([]);
+
+    // Stamp inner illustration
+    ctx.fillStyle = palette.bg;
+    ctx.fillRect(stampX + 6, stampY + 6, stampW - 12, stampH - 28);
+    ctx.font = "20px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("🕊️", stampX + stampW / 2, stampY + 44);
+
+    ctx.font = "bold 10px 'Nunito Local', sans-serif";
+    ctx.fillStyle = "#8c4438";
+    ctx.fillText("AIR MAIL", stampX + stampW / 2, stampY + stampH - 10);
+
+    // Postal cancellation waves across the stamp
+    ctx.strokeStyle = "rgba(40, 35, 45, 0.55)";
+    ctx.lineWidth = 1.5;
+    for (let wy = stampY + 18; wy < stampY + 70; wy += 14) {
+      ctx.beginPath();
+      ctx.moveTo(stampX - 35, wy);
+      ctx.bezierCurveTo(stampX - 15, wy - 6, stampX - 5, wy + 6, stampX + 15, wy);
+      ctx.stroke();
+    }
+
+    // Address lines
+    ctx.textAlign = "left";
+    let lineY = pY + 200;
+
+    ctx.font = "14px 'Nunito Local', sans-serif";
+    ctx.fillStyle = "#6c5848";
+
+    ctx.fillText("Gửi đến: .................................................................", rightX, lineY);
+    lineY += 46;
+    ctx.fillText("Tại: ...........................................................................", rightX, lineY);
+    lineY += 46;
+    if (dateStr) {
+      ctx.fillText(`Ngày gửi: ${dateStr}`, rightX, lineY);
+    } else {
+      ctx.fillText("Ngày gửi: ................................................................", rightX, lineY);
+    }
+    lineY += 46;
+    ctx.fillText(`Nhóm: ${categoryName}`, rightX, lineY);
+
+    // Round Postal Stamp seal (bottom-right)
+    ctx.save();
+    ctx.translate(pX + pW - 85, pY + pH - 65);
+    ctx.rotate(-0.08);
+    ctx.strokeStyle = "rgba(140, 68, 56, 0.6)";
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.arc(0, 0, 32, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.font = "bold 9px 'Nunito Local', sans-serif";
+    ctx.fillStyle = "rgba(140, 68, 56, 0.75)";
+    ctx.textAlign = "center";
+    ctx.fillText("POST OFFICE", 0, -10);
+    ctx.fillText("★ VIỆT NAM ★", 0, 4);
+    ctx.fillText("CERTIFIED", 0, 16);
+    ctx.restore();
+
+  } else if (template === "chalkboard") {
+    // TEMPLATE 7: Bảng Phấn Đen Nghệ Thuật (Chalkboard Sketch)
+    const boardW = 720;
+    const paddingX = 48;
+    const contentW = boardW - paddingX * 2;
+
+    ctx.font = "bold 28px 'Mali Local', cursive, sans-serif";
+    const titleLines = wrapCanvasText(ctx, titleStr, contentW);
+    const titleH = Math.max(1, titleLines.length) * 36;
+
+    ctx.font = "18px 'Nunito Local', sans-serif";
+    const bodyLines = contentStr ? wrapCanvasText(ctx, contentStr, contentW) : [];
+    const bodyH = bodyLines.length * 28;
+
+    const checklistH = checklist.length > 0 ? (checklist.length * 30 + 36) : 0;
+    const doodleH = doodleImg ? 180 : 0;
+    const footerH = 50;
+    const metaTopH = 50;
+
+    const innerH = metaTopH + titleH + 16 + (bodyH ? bodyH + 16 : 0) + (checklistH ? checklistH + 16 : 0) + (doodleH ? doodleH + 16 : 0) + footerH + 40;
+    const boardH = Math.max(460, innerH);
+
+    const margin = 24;
+    canvas.width = boardW + margin * 2;
+    canvas.height = boardH + margin * 2;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const bX = margin;
+    const bY = margin;
+
+    // Wood Frame outer
+    ctx.fillStyle = "#4a3525";
+    drawCanvasRoundRect(ctx, bX, bY, boardW, boardH, 14);
+    ctx.fill();
+
+    // Wood texture border highlight
+    ctx.strokeStyle = "#654933";
+    ctx.lineWidth = 3;
+    drawCanvasRoundRect(ctx, bX + 3, bY + 3, boardW - 6, boardH - 6, 12);
+    ctx.stroke();
+
+    // Inner Chalkboard Slate
+    const slateX = bX + 16;
+    const slateY = bY + 16;
+    const slateW = boardW - 32;
+    const slateH = boardH - 32;
+
+    ctx.fillStyle = "#222625";
+    drawCanvasRoundRect(ctx, slateX, slateY, slateW, slateH, 8);
+    ctx.fill();
+
+    // Chalk dust texture
+    ctx.fillStyle = "rgba(255, 255, 255, 0.04)";
+    for (let i = 0; i < 40; i++) {
+      const rx = slateX + (Math.sin(i * 99) * 0.5 + 0.5) * slateW;
+      const ry = slateY + (Math.cos(i * 77) * 0.5 + 0.5) * slateH;
+      ctx.beginPath();
+      ctx.arc(rx, ry, 12 + (i % 8), 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Inner chalk line border
+    ctx.strokeStyle = "rgba(244, 243, 236, 0.45)";
+    ctx.lineWidth = 1.6;
+    ctx.setLineDash([12, 7]);
+    drawCanvasRoundRect(ctx, slateX + 12, slateY + 12, slateW - 24, slateH - 24, 6);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Chalk Stars in corners
+    ctx.font = "16px sans-serif";
+    ctx.fillStyle = "#fff4a3";
+    ctx.fillText("✦", slateX + 24, slateY + 34);
+    ctx.fillText("✦", slateX + slateW - 38, slateY + 34);
+
+    // Category in chalk
+    ctx.font = "bold 13px 'Nunito Local', sans-serif";
+    ctx.fillStyle = "#a8d5e5";
+    ctx.fillText(`[ ${categoryName} ]`, slateX + paddingX, slateY + 42);
+
+    if (dateStr) {
+      ctx.textAlign = "right";
+      ctx.fillStyle = "rgba(244, 243, 236, 0.65)";
+      ctx.fillText(dateStr, slateX + slateW - paddingX, slateY + 42);
+      ctx.textAlign = "left";
+    }
+
+    // Title in chalk yellow
+    let curY = slateY + 82;
+    ctx.font = "bold 28px 'Mali Local', cursive, sans-serif";
+    ctx.fillStyle = "#fced96";
+    for (const tLine of titleLines) {
+      ctx.fillText(tLine, slateX + paddingX, curY);
+      curY += 36;
+    }
+    curY += 10;
+
+    // Body in chalk white
+    if (bodyLines.length > 0) {
+      ctx.font = "18px 'Nunito Local', sans-serif";
+      ctx.fillStyle = "#f4f3ec";
+      for (const bLine of bodyLines) {
+        ctx.fillText(bLine, slateX + paddingX, curY);
+        curY += 28;
+      }
+      curY += 14;
+    }
+
+    // Checklist
+    if (checklist.length > 0) {
+      ctx.font = "bold 17px 'Nunito Local', sans-serif";
+      ctx.fillStyle = "#a8d5e5";
+      ctx.fillText("Kế hoạch cần làm:", slateX + paddingX, curY);
+      curY += 26;
+
+      ctx.font = "17px 'Nunito Local', sans-serif";
+      for (const item of checklist) {
+        if (item.done) {
+          ctx.fillStyle = "#88c76d";
+          ctx.fillText(`☑ ${item.text}`, slateX + paddingX + 4, curY);
+        } else {
+          ctx.fillStyle = "#f4f3ec";
+          ctx.fillText(`☐ ${item.text}`, slateX + paddingX + 4, curY);
+        }
+        curY += 28;
+      }
+      curY += 10;
+    }
+
+    // Doodle on chalkboard
+    if (doodleImg) {
+      const boxW = slateW - paddingX * 2;
+      const boxH = 160;
+      const boxX = slateX + paddingX;
+      const boxY = curY;
+
+      ctx.fillStyle = "rgba(255, 255, 255, 0.08)";
+      drawCanvasRoundRect(ctx, boxX, boxY, boxW, boxH, 8);
+      ctx.fill();
+
+      const maxDrawW = boxW - 20;
+      const maxDrawH = boxH - 20;
+      const ratio = Math.min(maxDrawW / doodleImg.width, maxDrawH / doodleImg.height, 1);
+      const drawW = doodleImg.width * ratio;
+      const drawH = doodleImg.height * ratio;
+      const drawX = boxX + (boxW - drawW) / 2;
+      const drawY = boxY + (boxH - drawH) / 2;
+      ctx.drawImage(doodleImg, drawX, drawY, drawW, drawH);
+      curY += boxH + 16;
+    }
+
+    // Footer
+    curY = slateY + slateH - 30;
+    ctx.font = "italic 13px 'Mali Local', cursive, sans-serif";
+    ctx.fillStyle = "rgba(244, 243, 236, 0.55)";
+    ctx.fillText("Phấn trắng bảng đen — Mẩu Ghi Chú ✎", slateX + paddingX, curY);
+
+  } else if (template === "checklist") {
+    // TEMPLATE 8: Thẻ Nhiệm Vụ & Kế Hoạch (Task Index Card)
+    const cardW = 720;
+    const paddingX = 52;
+    const contentW = cardW - paddingX * 2;
+
+    ctx.font = "bold 26px 'Mali Local', cursive, sans-serif";
+    const titleLines = wrapCanvasText(ctx, titleStr, contentW);
+    const titleH = Math.max(1, titleLines.length) * 34;
+
+    ctx.font = "17px 'Nunito Local', sans-serif";
+    const bodyLines = contentStr ? wrapCanvasText(ctx, contentStr, contentW) : [];
+    const bodyH = bodyLines.length * 28;
+
+    const checklistH = checklist.length > 0 ? (checklist.length * 32 + 40) : 60;
+    const doodleH = doodleImg ? 180 : 0;
+    const footerH = 50;
+    const metaTopH = 60;
+
+    const innerH = metaTopH + titleH + 16 + (bodyH ? bodyH + 16 : 0) + checklistH + (doodleH ? doodleH + 16 : 0) + footerH + 40;
+    const cardH = Math.max(480, innerH);
+
+    const margin = 26;
+    canvas.width = cardW + margin * 2;
+    canvas.height = cardH + margin * 2;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const cX = margin;
+    const cY = margin;
+
+    // Card drop shadow
+    ctx.fillStyle = "rgba(37, 37, 42, 0.15)";
+    drawCanvasRoundRect(ctx, cX + 6, cY + 8, cardW, cardH, 14);
+    ctx.fill();
+
+    // Clean Index Card paper
+    ctx.fillStyle = "#ffffff";
+    drawCanvasRoundRect(ctx, cX, cY, cardW, cardH, 14);
+    ctx.fill();
+
+    // Top Category Color Tab
+    ctx.fillStyle = palette.bg;
+    ctx.beginPath();
+    ctx.roundRect(cX, cY, cardW, 46, [14, 14, 0, 0]);
+    ctx.fill();
+
+    // Border around tab & card
+    ctx.strokeStyle = "#25252a";
+    ctx.lineWidth = 2.5;
+    drawCanvasRoundRect(ctx, cX, cY, cardW, cardH, 14);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(cX, cY + 46);
+    ctx.lineTo(cX + cardW, cY + 46);
+    ctx.stroke();
+
+    // Binder spiral punch holes at the left edge
+    for (let hy = cY + 68; hy < cY + cardH - 30; hy += 42) {
+      ctx.fillStyle = "#ebe8e1";
+      ctx.beginPath();
+      ctx.arc(cX + 22, hy, 7, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(37, 37, 42, 0.5)";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+
+    // Red vertical margin line
+    ctx.strokeStyle = "rgba(225, 90, 90, 0.65)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(cX + 42, cY + 46);
+    ctx.lineTo(cX + 42, cY + cardH);
+    ctx.stroke();
+
+    // Blue horizontal ruled lines
+    ctx.strokeStyle = "rgba(180, 205, 235, 0.6)";
+    ctx.lineWidth = 1.2;
+    for (let ly = cY + 86; ly < cY + cardH - 40; ly += 32) {
+      ctx.beginPath();
+      ctx.moveTo(cX + 42, ly);
+      ctx.lineTo(cX + cardW - 16, ly);
+      ctx.stroke();
+    }
+
+    // Tab Header Content
+    ctx.font = "bold 14px 'Nunito Local', sans-serif";
+    ctx.fillStyle = "#25252a";
+    ctx.fillText(`📋 NHÓM: ${categoryName}`, cX + 24, cY + 28);
+
+    if (dateStr) {
+      ctx.textAlign = "right";
+      ctx.fillText(`Hạn / Ngày: ${dateStr}`, cX + cardW - 24, cY + 28);
+      ctx.textAlign = "left";
+    }
+
+    // Title
+    let curY = cY + 86;
+    ctx.fillStyle = "#25252a";
+    ctx.font = "bold 26px 'Mali Local', cursive, sans-serif";
+    for (const tLine of titleLines) {
+      ctx.fillText(tLine, cX + 58, curY);
+      curY += 34;
+    }
+    curY += 10;
+
+    // Body
+    if (bodyLines.length > 0) {
+      ctx.font = "17px 'Nunito Local', sans-serif";
+      ctx.fillStyle = "#333138";
+      for (const bLine of bodyLines) {
+        ctx.fillText(bLine, cX + 58, curY);
+        curY += 28;
+      }
+      curY += 12;
+    }
+
+    // Checklist with prominent checkboxes
+    if (checklist.length > 0) {
+      const doneCount = checklist.filter((c) => c.done).length;
+      ctx.font = "bold 17px 'Nunito Local', sans-serif";
+      ctx.fillStyle = "#25252a";
+      ctx.fillText(`Danh sách mục tiêu (${doneCount}/${checklist.length}):`, cX + 58, curY);
+      curY += 28;
+
+      ctx.font = "17px 'Nunito Local', sans-serif";
+      for (const item of checklist) {
+        const boxX = cX + 58;
+        const boxY = curY - 16;
+        ctx.fillStyle = item.done ? "#88c76d" : "#ffffff";
+        drawCanvasRoundRect(ctx, boxX, boxY, 20, 20, 4);
+        ctx.fill();
+        ctx.strokeStyle = "#25252a";
+        ctx.lineWidth = 1.8;
+        drawCanvasRoundRect(ctx, boxX, boxY, 20, 20, 4);
+        ctx.stroke();
+
+        if (item.done) {
+          ctx.font = "bold 14px sans-serif";
+          ctx.fillStyle = "#ffffff";
+          ctx.fillText("✓", boxX + 4, boxY + 15);
+          ctx.font = "17px 'Nunito Local', sans-serif";
+          ctx.fillStyle = "#77757f";
+          ctx.fillText(item.text, boxX + 30, curY);
+          const tW = ctx.measureText(item.text).width;
+          ctx.strokeStyle = "#77757f";
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(boxX + 30, curY - 5);
+          ctx.lineTo(boxX + 30 + tW, curY - 5);
+          ctx.stroke();
+        } else {
+          ctx.fillStyle = "#25252a";
+          ctx.fillText(item.text, boxX + 30, curY);
+        }
+        curY += 32;
+      }
+      curY += 10;
+    }
+
+    // Doodle
+    if (doodleImg) {
+      const boxW = cardW - 100;
+      const boxH = 160;
+      const boxX = cX + 58;
+      const boxY = curY;
+
+      ctx.fillStyle = "#faf8f2";
+      drawCanvasRoundRect(ctx, boxX, boxY, boxW, boxH, 8);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(37, 37, 42, 0.3)";
+      ctx.lineWidth = 1.5;
+      drawCanvasRoundRect(ctx, boxX, boxY, boxW, boxH, 8);
+      ctx.stroke();
+
+      const maxDrawW = boxW - 20;
+      const maxDrawH = boxH - 20;
+      const ratio = Math.min(maxDrawW / doodleImg.width, maxDrawH / doodleImg.height, 1);
+      const drawW = doodleImg.width * ratio;
+      const drawH = doodleImg.height * ratio;
+      const drawX = boxX + (boxW - drawW) / 2;
+      const drawY = boxY + (boxH - drawH) / 2;
+      ctx.drawImage(doodleImg, drawX, drawY, drawW, drawH);
+      curY += boxH + 16;
+    }
+
+    // Footer
+    curY = cY + cardH - 26;
+    ctx.font = "italic 13px 'Mali Local', cursive, sans-serif";
+    ctx.fillStyle = "#7a7784";
+    ctx.fillText("Index Card Kế Hoạch — Mẩu Ghi Chú ✎", cX + 58, curY);
   }
 }
 
