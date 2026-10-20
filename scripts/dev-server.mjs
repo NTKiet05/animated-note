@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 
 import { createAuthHandler } from "../netlify/functions/auth.mjs";
 import { createHandler as createNotesHandler } from "../netlify/functions/notes.mjs";
+import { pingSupabase } from "../netlify/functions/supabase-keep-alive.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -108,6 +109,12 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${host}`);
 
   // Route API
+  if (url.pathname === "/api/supabase-keep-alive") {
+    const result = await pingSupabase();
+    res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify(result, null, 2));
+    return;
+  }
   if (url.pathname.startsWith("/api/auth/")) {
     await handleApi(authHandler, req, res, url);
     return;

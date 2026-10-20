@@ -1,0 +1,30 @@
+name: Supabase Keep-Alive
+
+on:
+  schedule:
+    # Chạy mỗi ngày lúc 00:00 UTC
+    - cron: '0 0 * * *'
+  workflow_dispatch: # Cho phép chạy thủ công từ tab Actions
+
+jobs:
+  ping-supabase:
+    name: Ping Supabase REST API
+    runs-on: ubuntu-latest
+    steps:
+      - name: Gửi request duy trì Supabase
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ]; then
+            echo "::notice ::Chưa cấu hình secret SUPABASE_URL trên GitHub. Netlify Scheduled Function vẫn tự động đảm nhiệm keep-alive nếu bạn đã cấu hình trên Netlify."
+            exit 0
+          fi
+          echo "Đang gửi request giữ kết nối tới Supabase: $SUPABASE_URL/rest/v1/"
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X GET \
+            "$SUPABASE_URL/rest/v1/" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+            -H "User-Agent: GitHub-Actions-KeepAlive/1.0" \
+            --max-time 15)
+          echo "Hoàn thành. HTTP Status Code: $HTTP_CODE"

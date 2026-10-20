@@ -52,6 +52,76 @@ class MemoryStore {
 }
 
 
+test('sổ chung: mời người thân, cùng viết, xuất dữ liệu và thu hồi quyền truy cập', async () => {
+  const store = new MemoryStore();
+  let sequence = 1;
+  const options = {
+    storeFactory: () => store,
+    idFactory: () => `${String(sequence++).padStart(8, '0')}-abcd-4abc-8abc-abcdefabcdef`,
+    logger: { error() {} },
+  };
+  const owner = createHandler({ ...options, getUserFn: async () => ({ id: 'owner', username: 'An' }) });
+  const lovedOne = createHandler({ ...options, getUserFn: async () => ({ id: 'partner', username: 'Bình' }) });
+  const outsider = createHandler({ ...options, getUserFn: async () => ({ id: 'stranger', username: 'Người lạ' }) });
+  const guest = createHandler({ ...options, getUserFn: async () => null });
+
+  const created = await owner(makeRequest('/api/books', 'POST', { title: 'Những ngày bên nhau' }));
+  assert.equal(created.status, 201);
+  const { book } = await readJson(created);
+  assert.equal(book.members.length, 1);
+  assert.equal((await readJson(await owner(makeRequest('/api/books')))).books[0].id, book.id);
+  assert.equal((await readJson(await outsider(makeRequest('/api/books')))).books.length, 0);
+  assert.equal((await guest(makeRequest(`/api/books/${book.id}`))).status, 401);
+  assert.equal((await outsider(makeRequest(`/api/books/${book.id}`))).status, 403);
+  assert.equal((await outsider(makeRequest(`/api/books/${book.id}/entries`, 'POST', { content: 'Lén ghi' }))).status, 403);
+
+  const wrongCode = await lovedOne(makeRequest('/api/books/join', 'POST', { code: 'bad' }));
+  assert.equal(wrongCode.status, 400);
+  assert.equal((await lovedOne(makeRequest('/api/books/join', 'POST', { code: book.invite_code }))).status, 200);
+  const joined = await readJson(await lovedOne(makeRequest(`/api/books/${book.id}`)));
+  assert.equal(joined.book.members.length, 2);
+  assert.equal(joined.book.invite_code, null);
+
+  const invalid = await lovedOne(makeRequest(`/api/books/${book.id}/entries`, 'POST', { content: '' }));
+  assert.equal(invalid.status, 400);
+  const stored = await lovedOne(makeRequest(`/api/books/${book.id}/entries`, 'POST', {
+    title: 'Ngày hẹn hò', content: 'Mong sớm gặp lại!', note_date: '2026-10-12',
+  }));
+  assert.equal(stored.status, 201);
+  const entry = (await readJson(stored)).entry;
+  assert.equal(entry.author_name, 'Bình');
+  assert.equal(entry.revision, 1);
+  assert.equal((await readJson(await owner(makeRequest(`/api/books/${book.id}/entries`)))).entries[0].id, entry.id);
+
+  const edited = await owner(makeRequest(`/api/books/${book.id}/entries/${entry.id}`, 'PUT', {
+    title: 'Ngày đáng nhớ', content: 'Cùng lưu lại', note_date: '2026-10-13', expected_revision: 1,
+  }));
+  assert.equal(edited.status, 200);
+  assert.equal((await readJson(edited)).entry.author_name, 'Bình');
+  assert.equal((await readJson(await owner(makeRequest(`/api/books/${book.id}/entries`)))).entries[0].revision, 2);
+  assert.equal((await lovedOne(makeRequest(`/api/books/${book.id}/entries/${entry.id}`, 'PUT', {
+    title: 'Ghi đè từ bản cũ', content: 'Lời nhắn đã cũ', expected_revision: 1,
+  }))).status, 409);
+  assert.equal((await readJson(await owner(makeRequest(`/api/books/${book.id}/entries`)))).entries[0].title, 'Ngày đáng nhớ');
+  assert.equal((await outsider(makeRequest(`/api/books/${book.id}/entries/${entry.id}`, 'DELETE'))).status, 403);
+  const photoError = await lovedOne(makeRequest(`/api/books/${book.id}/entries`, 'POST', {
+    content: 'Ảnh', photo: 'data:image/svg+xml;base64,YQ==',
+  }));
+  assert.equal(photoError.status, 400);
+
+  const oldCode = book.invite_code;
+  const newCode = (await readJson(await owner(makeRequest(`/api/books/${book.id}/invite`, 'POST')))).invite_code;
+  assert.notEqual(oldCode, newCode);
+  assert.equal((await outsider(makeRequest('/api/books/join', 'POST', { code: oldCode }))).status, 404);
+  assert.equal((await lovedOne(makeRequest(`/api/books/${book.id}/remove-member`, 'POST', { member_id: 'owner' }))).status, 403);
+  assert.equal((await owner(makeRequest(`/api/books/${book.id}/remove-member`, 'POST', { member_id: 'partner' }))).status, 200);
+  assert.equal((await lovedOne(makeRequest(`/api/books/${book.id}/entries`))).status, 403);
+  assert.equal((await lovedOne(makeRequest('/api/books')).then(readJson)).books.length, 0);
+  assert.equal((await outsider(makeRequest('/api/books/join', 'POST', { code: newCode }))).status, 404);
+  assert.equal((await owner(makeRequest(`/api/books/${book.id}/entries/${entry.id}`, 'DELETE'))).status, 200);
+});
+
+
 function makeRequest(path, method = "GET", payload) {
   return new Request(`https://example.netlify.app${path}`, {
     method,

@@ -328,6 +328,27 @@ function cleanNote(payload) {
   };
 }
 
+function cleanBookEntry(payload) {
+  ensureObject(payload, "Kỷ niệm không hợp lệ.");
+  const title = cleanText(payload.title);
+  const content = cleanText(payload.content);
+  if (!title && !content) throw new ValidationError("Hãy viết một kỷ niệm trước khi lưu.");
+  if (title.length > 120 || content.length > 10000) {
+    throw new ValidationError("Tiêu đề tối đa 120 và nội dung tối đa 10.000 ký tự.");
+  }
+  const photo = payload.photo || null;
+  if (photo !== null && (typeof photo !== "string" ||
+      photo.length > 450000 || !/^data:image\/(png|jpeg|webp);base64,[a-zA-Z0-9+/]+=*$/.test(photo))) {
+    throw new ValidationError("Ảnh kỷ niệm phải là PNG, JPEG hoặc WebP nhỏ hơn 330 KB.");
+  }
+  return {
+    title: title || "Một kỷ niệm",
+    content,
+    note_date: cleanNoteDate(payload.note_date),
+    photo,
+  };
+}
+
 
 async function parseBody(request) {
   const contentType = request.headers.get("content-type") || "";
@@ -517,9 +538,16 @@ function resolveNoteCategory(input, catalog) {
 
 function parseRoute(request) {
   const segments = new URL(request.url).pathname.split("/").filter(Boolean);
-  if (segments[0] !== "api" || segments.length < 2 || segments.length > 4) return null;
+  if (segments[0] !== "api" || segments.length < 2 || segments.length > 5) return null;
   const resource = segments[1];
-  if (!["notes", "categories", "trash", "backup", "restore", "share"].includes(resource)) return null;
+  if (!["notes", "categories", "trash", "backup", "restore", "share", "books"].includes(resource)) return null;
+
+  if (resource === "books") {
+    if (segments[2] === "join" && segments.length === 3) return { resource, subAction: "join" };
+    if (segments.length > 3 && !["entries", "invite", "remove-member"].includes(segments[3])) return null;
+    if (segments.length === 5 && segments[3] !== "entries") return null;
+    return { resource, id: segments[2] || null, subAction: segments[3] || null, itemId: segments[4] || null };
+  }
 
   if (resource === "trash") return { resource: "trash", id: null };
   if (resource === "backup") return { resource: "backup", id: null };
@@ -544,10 +572,10 @@ export function createHandler({
     const route = parseRoute(request);
     if (!route) return json({ error: "Đường dẫn không tồn tại." }, 404);
 
-    const { resource, id, subAction } = route;
+    const { resource, id, subAction, itemId } = route;
     const method = request.method.toUpperCase();
 
-    if (id && !ID_PATTERN.test(id)) {
+    if ((id && !ID_PATTERN.test(id)) || (itemId && !ID_PATTERN.test(itemId))) {
       return json(
         { error: resource === "notes" ? "Mã ghi chú không hợp lệ." : "Mã không hợp lệ." },
         400,
@@ -588,6 +616,134 @@ export function createHandler({
         return json({ error: "Bạn cần đăng nhập để xem và chỉnh sửa ghi chú." }, 401);
       }
       const userId = String(user.id);
+
+      if (resource === "books") {
+        const bookKey = (bookId) => `books/${bookId}/info`;
+        const memberKey = (bookId, memberId) => `books/${bookId}/members/${encodeURIComponent(memberId)}`;
+        const entryKey = (bookId, entryId) => `books/${bookId}/entries/${entryId}`;
+        const indexKey = (memberId, bookId) => `${userPrefix(memberId)}books/${bookId}`;
+
+        if (!id && method === "GET") {
+          const linkedBooks = await listRecords(store, `${userPrefix(userId)}books/`);
+          const books = (await Promise.all(linkedBooks.map(async ({ id: bookId }) => {
+            if (!ID_PATTERN.test(String(bookId))) return null;
+            const [book, membership] = await Promise.all([
+              store.get(bookKey(bookId), { type: "json", consistency: "strong" }),
+              store.get(memberKey(bookId, userId), { type: "json", consistency: "strong" }),
+            ]);
+            return book && membership ? { id: book.id, title: book.title, owner_name: book.owner_name } : null;
+          }))).filter(Boolean);
+          return json({ books });
+        }
+
+        if (!id && !subAction && method === "POST") {
+          const body = await parseBody(request);
+          const title = cleanText(body?.title);
+          if (!title || title.length > 100) throw new ValidationError("Tên sổ phải có từ 1 đến 100 ký tự.");
+          const bookId = idFactory();
+          const code = idFactory();
+          if (!ID_PATTERN.test(bookId) || !ID_PATTERN.test(code)) throw new Error("Mã sổ không hợp lệ.");
+          const book = { id: bookId, title, owner_id: userId, owner_name: user.username, invite_code: code, created_at: nowFactory() };
+          const saved = await store.setJSON(bookKey(bookId), book, { onlyIfNew: true });
+          if (saved?.modified === false) return json({ error: "Mã sổ bị trùng. Hãy thử lại." }, 409);
+          await store.setJSON(memberKey(bookId, userId), { id: userId, username: user.username });
+          await store.setJSON(indexKey(userId, bookId), { id: bookId });
+          await store.setJSON(`books/invites/${code}`, { id: bookId });
+          return json({ book: { ...book, members: [{ id: userId, username: user.username }] } }, 201);
+        }
+
+        if (subAction === "join" && method === "POST") {
+          const body = await parseBody(request);
+          const code = cleanText(body?.code);
+          if (!ID_PATTERN.test(code)) throw new ValidationError("Mã mời không hợp lệ.");
+          const invitation = await store.get(`books/invites/${code}`, { type: "json", consistency: "strong" });
+          const book = invitation?.id && await store.get(bookKey(invitation.id), { type: "json", consistency: "strong" });
+          if (!book || book.invite_code !== code) return json({ error: "Lời mời không tồn tại hoặc đã hết hiệu lực." }, 404);
+          const members = await listRecords(store, `books/${book.id}/members/`);
+          if (members.length >= 20 && !members.some((member) => member.id === userId)) {
+            return json({ error: "Sổ đã đủ 20 thành viên." }, 409);
+          }
+          await store.setJSON(memberKey(book.id, userId), { id: userId, username: user.username });
+          await store.setJSON(indexKey(userId, book.id), { id: book.id });
+          return json({ book: { id: book.id, title: book.title } });
+        }
+
+        if (!id) return json({ error: "Thao tác không được hỗ trợ." }, 405);
+        const [book, membership] = await Promise.all([
+          store.get(bookKey(id), { type: "json", consistency: "strong" }),
+          store.get(memberKey(id, userId), { type: "json", consistency: "strong" }),
+        ]);
+        if (!book || !membership) return json({ error: "Bạn không có quyền truy cập sổ này." }, 403);
+        const isOwner = book.owner_id === userId;
+
+        if (!subAction && method === "GET") {
+          const members = await listRecords(store, `books/${id}/members/`);
+          const { invite_code, ...publicBook } = book;
+          return json({ book: { ...publicBook, members, invite_code: isOwner ? invite_code : null } });
+        }
+
+        if (subAction === "invite" && method === "POST" && isOwner) {
+          const newCode = idFactory();
+          if (!ID_PATTERN.test(newCode)) throw new Error("Mã mời không hợp lệ.");
+          await store.setJSON(`books/invites/${newCode}`, { id });
+          const oldCode = book.invite_code;
+          book.invite_code = newCode;
+          await store.setJSON(bookKey(id), book);
+          await store.delete(`books/invites/${oldCode}`);
+          return json({ invite_code: newCode });
+        }
+
+        if (subAction === "remove-member" && method === "POST" && isOwner) {
+          const body = await parseBody(request);
+          const memberId = cleanText(body?.member_id);
+          if (!memberId || memberId === book.owner_id) throw new ValidationError("Không thể xóa chủ sổ.");
+          const member = await store.get(memberKey(id, memberId), { type: "json", consistency: "strong" });
+          if (!member) return json({ error: "Thành viên không tồn tại." }, 404);
+          await store.delete(memberKey(id, memberId));
+          await store.delete(indexKey(memberId, id));
+          const newCode = idFactory();
+          if (!ID_PATTERN.test(newCode)) throw new Error("Mã mời không hợp lệ.");
+          await store.setJSON(`books/invites/${newCode}`, { id });
+          await store.delete(`books/invites/${book.invite_code}`);
+          book.invite_code = newCode;
+          await store.setJSON(bookKey(id), book);
+          return json({ removed: true, invite_code: newCode });
+        }
+
+        if (subAction === "entries") {
+          if (method === "GET" && !itemId) {
+            const entries = await listRecords(store, `books/${id}/entries/`);
+            entries.sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
+            return json({ entries });
+          }
+          if (method === "POST" && !itemId) {
+            const input = cleanBookEntry(await parseBody(request));
+            const entryId = idFactory();
+            if (!ID_PATTERN.test(entryId)) throw new Error("Mã kỷ niệm không hợp lệ.");
+            const now = nowFactory();
+            const entry = { ...input, id: entryId, author_id: userId, author_name: user.username, revision: 1, created_at: now, updated_at: now };
+            const result = await store.setJSON(entryKey(id, entryId), entry, { onlyIfNew: true });
+            if (result?.modified === false) return json({ error: "Không thể tạo kỷ niệm. Hãy thử lại." }, 409);
+            return json({ entry }, 201);
+          }
+          if (itemId && ["PUT", "DELETE"].includes(method)) {
+            const existing = await store.get(entryKey(id, itemId), { type: "json", consistency: "strong" });
+            if (!existing) return json({ error: "Kỷ niệm không tồn tại." }, 404);
+            if (method === "DELETE") {
+              await store.delete(entryKey(id, itemId));
+              return json({ deleted: true });
+            }
+            const payload = await parseBody(request);
+            if (payload.expected_revision !== undefined && payload.expected_revision !== (existing.revision || 1)) {
+              return json({ error: "Trang kỷ niệm đã được người khác cập nhật. Hãy sao chép lời nhắn của bạn trước khi tải lại trang." }, 409);
+            }
+            const entry = { ...existing, ...cleanBookEntry(payload), revision: (existing.revision || 1) + 1, updated_at: nowFactory() };
+            await store.setJSON(entryKey(id, itemId), entry);
+            return json({ entry });
+          }
+        }
+        return json({ error: "Thao tác hoặc quyền không hợp lệ." }, 403);
+      }
 
       if (resource === "trash") {
         if (method === "DELETE") {
@@ -929,5 +1085,12 @@ export const config = {
     "/api/backup",
     "/api/restore",
     "/api/share/:token",
+    "/api/books",
+    "/api/books/join",
+    "/api/books/:id",
+    "/api/books/:id/invite",
+    "/api/books/:id/remove-member",
+    "/api/books/:id/entries",
+    "/api/books/:id/entries/:entryId",
   ],
 };

@@ -98,6 +98,7 @@
           <span class="button-plus" aria-hidden="true">+</span>
           Ghi điều mới
         </button>
+        <button class="secondary-button" id="openBooksButton" type="button">♥ Sổ ghi chú chung</button>
       </section>
 
       <main class="workspace">
@@ -738,6 +739,7 @@
 
       <p class="dialog-lead">Chọn phong cách tấm ghi chú bạn yêu thích để tải về làm kỷ niệm hoặc chia sẻ.</p>
 
+      <div class="export-workspace">
       <div class="export-template-selector" id="exportTemplateSelector" role="radiogroup" aria-label="Chọn mẫu lưu">
         <label class="export-template-option">
           <input type="radio" name="exportTemplate" value="card" checked />
@@ -824,6 +826,7 @@
       <div class="export-preview-wrapper">
         <canvas id="exportPreviewCanvas"></canvas>
       </div>
+      </div>
 
       <div class="dialog-actions">
         <button class="ghost-button" id="cancelExportBtn" type="button">Hủy</button>
@@ -832,7 +835,78 @@
       </div>
     </dialog>
 
+    <dialog class="books-dialog paper-dialog" id="booksDialog" aria-labelledby="booksDialogTitle">
+      <div class="dialog-header">
+        <div>
+          <p class="eyebrow">Gần nhau dù ở xa</p>
+          <h2 id="booksDialogTitle">Sổ ghi chú chung của chúng mình</h2>
+          <p class="dialog-lead">Cùng người thân, bạn bè hoặc người yêu viết những kỷ niệm theo thời gian.</p>
+        </div>
+        <button class="icon-button" id="closeBooksButton" type="button" aria-label="Đóng sổ chung">×</button>
+      </div>
+      <details class="books-setup-panel" id="booksSetupPanel">
+        <summary>Tạo sổ mới hoặc tham gia sổ khác</summary>
+        <div class="books-setup">
+        <form id="createBookForm" class="books-compact-form">
+          <label class="field"><span>Tên sổ mới</span><input id="newBookTitle" maxlength="100" required placeholder="Ví dụ: Chuyện của hai đứa" /></label>
+          <button class="primary-button" type="submit">Tạo sổ chung</button>
+        </form>
+        <form id="joinBookForm" class="books-compact-form">
+          <label class="field"><span>Mã hoặc liên kết mời</span><input id="bookJoinCode" required placeholder="Dán mã hoặc liên kết từ người thân" autocomplete="off" /></label>
+          <button class="secondary-button" type="submit">Tham gia sổ</button>
+        </form>
+        </div>
+      </details>
+      <div class="books-layout">
+        <nav class="books-library" aria-label="Danh sách sổ chung">
+          <h3>Sổ của tôi</h3>
+          <div id="booksList"><p>Chưa có sổ chung.</p></div>
+        </nav>
+        <section class="books-main" id="activeBookArea" hidden>
+          <div class="books-title-row">
+            <div><h3 id="activeBookTitle"></h3><p id="bookMemberNames"></p></div>
+            <div class="books-actions">
+              <button class="ghost-button" id="refreshBookButton" type="button">Làm mới</button>
+              <button class="secondary-button" id="downloadBookButton" type="button">Tải sổ HTML</button>
+              <button class="primary-button" id="printBookButton" type="button">In / lưu scrapbook PDF</button>
+            </div>
+          </div>
+          <p class="books-export-hint">Xuất sổ thành các trang A4 có bìa, ảnh và lời nhắn. Chọn <strong>Lưu thành PDF</strong> trong cửa sổ in để giữ làm kỷ niệm.</p>
+          <div id="bookInviteRow" class="books-invite" hidden>
+            <label class="field"><span>Mã mời (chỉ chủ sổ được chia sẻ)</span><input readonly id="bookInviteCode" /></label>
+            <button class="secondary-button" id="copyBookInviteButton" type="button">Sao chép mã</button>
+            <button class="primary-button" id="copyBookInviteLinkButton" type="button">Sao chép liên kết mời</button>
+            <button class="ghost-button" id="rotateBookInviteButton" type="button">Đổi mã mời</button>
+          </div>
+          <p class="books-invite-hint">Người được mời mở liên kết, đăng nhập hoặc tạo tài khoản, rồi bấm “Tham gia sổ”. Sổ tự kiểm tra trang mới mỗi 20 giây.</p>
+          <div class="books-members" id="bookMembersList" aria-label="Thành viên trong sổ"></div>
+          <div class="books-entry-layout">
+            <section class="books-entries-section">
+              <h3>Trang kỷ niệm <span id="bookEntryCount"></span></h3>
+              <div class="books-entries" id="bookEntries"></div>
+            </section>
+            <form id="bookEntryForm" class="books-entry-form">
+              <h3 id="bookEntryFormHeading">Viết một kỷ niệm</h3>
+              <input type="hidden" id="bookEntryId" />
+              <label class="field"><span>Tiêu đề</span><input id="bookEntryTitle" maxlength="120" placeholder="Hôm nay mình nhớ..." /></label>
+              <label class="field"><span>Ngày kỷ niệm</span><input id="bookEntryDate" type="date" required /></label>
+              <label class="field"><span>Lời nhắn</span><textarea id="bookEntryContent" rows="10" maxlength="10000" placeholder="Gửi đến người thương..."></textarea></label>
+              <label class="field"><span>Ảnh kỷ niệm (PNG/JPEG/WebP, tối đa 330 KB)</span><input id="bookEntryPhoto" type="file" accept="image/png,image/jpeg,image/webp" /></label>
+              <img id="bookPhotoPreview" class="book-photo-preview" alt="Ảnh kỷ niệm đang chọn" hidden />
+              <button class="ghost-button" id="removeBookPhotoButton" type="button" hidden>Gỡ ảnh</button>
+              <div class="dialog-actions">
+                <button class="ghost-button" id="newBookEntryButton" type="button">Trang mới</button>
+                <button class="primary-button" type="submit">Lưu vào sổ</button>
+              </div>
+            </form>
+          </div>
+        </section>
+        <p id="booksWelcome" class="books-welcome">Tạo sổ hoặc nhập mã mời để viết những trang đầu tiên cùng nhau.</p>
+      </div>
+    </dialog>
+
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <script src="/app.js?v=2.6.0" defer></script>
+    <script src="/books.js?v=2.7.1" defer></script>
   </body>
 </html>

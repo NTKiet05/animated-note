@@ -213,6 +213,20 @@ npx netlify deploy --build --prod
    - `netlify.toml`
 2. Mở [Netlify Drop](https://app.netlify.com/drop) và kéo thả tệp zip vào để triển khai ngay lập tức.
 
+### ⏰ Duy trì Supabase (Keep-Alive Cron)
+Để ngăn chặn dự án Supabase gói Free bị tạm ngưng (pause) sau 7 ngày không có tương tác, dự án tích hợp sẵn **Netlify Scheduled Function** (`netlify/functions/supabase-keep-alive.mjs`) tự động gửi request kích hoạt mỗi ngày (`@daily` lúc 00:00 UTC):
+
+1. **Cấu hình biến môi trường trên Netlify:**
+   - Truy cập **Site configuration** > **Environment variables** > **Add a variable**.
+   - Thêm các biến sau:
+     - `SUPABASE_URL`: Đường dẫn URL dự án Supabase của bạn (ví dụ: `https://abcdefghijkl.supabase.co`).
+     - `SUPABASE_ANON_KEY`: Khóa API `anon` công khai (lấy tại *Supabase Dashboard > Project Settings > API*).
+     - *(Tùy chọn)* `SUPABASE_TABLE`: Tên bảng cần truy vấn kích hoạt dữ liệu (ví dụ: `notes`).
+2. **Kiểm tra trạng thái:**
+   - Trên Netlify: Vào **Functions** > chọn `supabase-keep-alive` > bấm **"Run now"** để gửi ping thử nghiệm ngay lập tức.
+   - Khi chạy cục bộ: Truy cập `http://localhost:3000/api/supabase-keep-alive` để xem phản hồi JSON.
+   - Kèm theo workflow **GitHub Actions** (`.github/workflows/supabase-keep-alive.yml`) chạy dự phòng song song hoàn toàn tự động.
+
 ---
 
 ## 🔌 Danh mục API Endpoints

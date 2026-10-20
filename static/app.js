@@ -535,6 +535,8 @@ function addChecklistItem(text = "", done = false) {
 let doodleDrawing = false;
 let doodleCtx = null;
 let doodleHistory = [];
+let doodleFrame = 0;
+let pendingDoodlePoints = [];
 
 function setupDoodleCanvas() {
   const canvas = elements.doodleCanvas;
@@ -543,57 +545,74 @@ function setupDoodleCanvas() {
   doodleCtx.lineCap = "round";
   doodleCtx.lineJoin = "round";
 
+  let strokeBounds;
   function getCoords(e) {
-    const rect = canvas.getBoundingClientRect();
+    const rect = strokeBounds || canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
+    return { x: (e.clientX - rect.left) * scaleX, y: (e.clientY - rect.top) * scaleY };
+  }
+
+  function paintPending() {
+    doodleFrame = 0;
+    if (!pendingDoodlePoints.length) return;
+    doodleCtx.lineWidth = Number(elements.doodleLineWidth.value);
+    const erasing = elements.doodleEraserTool.classList.contains("active");
+    doodleCtx.globalCompositeOperation = erasing ? "destination-out" : "source-over";
+    if (!erasing) doodleCtx.strokeStyle = elements.doodleColorPicker.value;
+    for (const { x, y } of pendingDoodlePoints) {
+      doodleCtx.lineTo(x, y);
+      doodleCtx.stroke();
+      doodleCtx.beginPath();
+      doodleCtx.moveTo(x, y);
+    }
+    pendingDoodlePoints = [];
   }
 
   function start(e) {
+    if (e.button !== 0 && e.pointerType === "mouse") return;
     e.preventDefault();
+    if (doodleDrawing) return;
     doodleDrawing = true;
+    strokeBounds = canvas.getBoundingClientRect();
+    canvas.setPointerCapture(e.pointerId);
     doodleHistory.push(doodleCtx.getImageData(0, 0, canvas.width, canvas.height));
     if (doodleHistory.length > 20) doodleHistory.shift();
     const { x, y } = getCoords(e);
     doodleCtx.beginPath();
     doodleCtx.moveTo(x, y);
+    pendingDoodlePoints = [{ x: x + 0.01, y: y + 0.01 }];
+    doodleFrame = requestAnimationFrame(paintPending);
   }
 
   function move(e) {
     if (!doodleDrawing) return;
     e.preventDefault();
-    const { x, y } = getCoords(e);
-    const isEraser = elements.doodleEraserTool.classList.contains("active");
-    doodleCtx.lineWidth = Number(elements.doodleLineWidth.value);
-    if (isEraser) {
-      doodleCtx.globalCompositeOperation = "destination-out";
-    } else {
-      doodleCtx.globalCompositeOperation = "source-over";
-      doodleCtx.strokeStyle = elements.doodleColorPicker.value;
-    }
-    doodleCtx.lineTo(x, y);
-    doodleCtx.stroke();
+    const events = e.getCoalescedEvents?.() || [e];
+    for (const point of events) pendingDoodlePoints.push(getCoords(point));
+    if (!doodleFrame) doodleFrame = requestAnimationFrame(paintPending);
   }
 
   function stop() {
+    if (doodleFrame) cancelAnimationFrame(doodleFrame);
+    paintPending();
+    doodleCtx.globalCompositeOperation = "source-over";
+    strokeBounds = null;
     doodleDrawing = false;
   }
 
-  canvas.addEventListener("mousedown", start);
-  canvas.addEventListener("mousemove", move);
-  window.addEventListener("mouseup", stop);
-  canvas.addEventListener("touchstart", start, { passive: false });
-  canvas.addEventListener("touchmove", move, { passive: false });
-  window.addEventListener("touchend", stop);
+  canvas.addEventListener("pointerdown", start);
+  canvas.addEventListener("pointermove", move);
+  canvas.addEventListener("pointerup", stop);
+  canvas.addEventListener("pointercancel", stop);
+  canvas.addEventListener("lostpointercapture", stop);
 }
 
 function openDoodleDialog() {
   doodleHistory = [];
   const canvas = elements.doodleCanvas;
   doodleCtx = canvas.getContext("2d");
+  doodleCtx.globalCompositeOperation = "source-over";
   doodleCtx.clearRect(0, 0, canvas.width, canvas.height);
   if (state.currentDoodle) {
     const img = new Image();
@@ -2331,6 +2350,7 @@ async function submitAuth(event) {
         elements.recoveryKeyText.textContent = payload.recovery_key;
         elements.recoveryNoticeDialog.showModal();
       }
+      window.dispatchEvent(new Event('animated-note:ready'));
     }
   } catch (error) {
     elements.authMessage.textContent = error.message;
@@ -2367,6 +2387,7 @@ async function bootstrap() {
     }
     showApp(session.user);
     await loadData();
+    window.dispatchEvent(new Event('animated-note:ready'));
   } catch (error) {
     showAuth(error.message);
     elements.authMessage.classList.remove("success");

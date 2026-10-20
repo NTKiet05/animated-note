@@ -9,6 +9,9 @@
 [functions]
   node_bundler = "esbuild"
 
+[functions."supabase-keep-alive"]
+  schedule = "@daily"
+
 [[headers]]
   for = "/*"
   [headers.values]
